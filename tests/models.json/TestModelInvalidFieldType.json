@@ -1,0 +1,9 @@
+{
+    "name": "TestModel",
+    "base": "django.db.models.Model",
+    "properties":{
+        "no_such_type":{
+            "type": "invalid_type"
+        }
+    }
+}

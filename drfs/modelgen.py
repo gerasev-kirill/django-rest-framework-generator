@@ -8,7 +8,7 @@ from .transform import Fields, Relations
 
 class ModelGenFactory(type):
     def __new__(self, definition, module_name, **kwargs):
-        f = Fields(definition.get('properties', {}))
+        f = Fields(definition.get('properties', {}), definition.get('name', 'NonameModel'))
         fields = f.transform()
 
         r = Relations(definition.get('relations', {}))
@@ -16,7 +16,6 @@ class ModelGenFactory(type):
 
 
         name = str(definition['name'])
-        print 'MODELGEN::: ' + name
         base_class = helpers.import_class(
             definition['base']
         )

@@ -34,13 +34,17 @@ class Base:
         fields = {}
         for field_name, field_params in self.data.items():
             _type = field_params['type']
-            func = getattr(self, '_' + _type)
+            try:
+                func = getattr(self, '_' + _type)
+            except:
+                raise ValueError("No such field type '"+_type+"'. Field '"+field_name+"' declared in '"+self.modelname+"' model")
             fields[field_name] = func(field_params)
         return fields
 
 
 class Fields(Base):
-    def __init__(self, fields):
+    def __init__(self, fields, modelname):
+        self.modelname = modelname
         self.data = fields
 
     def _get_field_defaults(self, params):

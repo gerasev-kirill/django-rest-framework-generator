@@ -1,8 +1,9 @@
 from . import modelgen
 from .serializergen import SerializerGenFactory
 from .viewsetgen import ViewsetGenFactory
-import json, os
+import json, os, errno
 from django.conf import settings
+
 
 class Cache:
     pass
@@ -35,6 +36,13 @@ def generate_model(name):
         return model
 
     module_name, path = find_model_definition(name)
+    if not module_name and not path:
+        raise OSError(
+            errno.ENOENT,
+            os.strerror(errno.ENOENT),
+            name
+        )
+
     with open(path) as f:
         definition = json.load(f)
 

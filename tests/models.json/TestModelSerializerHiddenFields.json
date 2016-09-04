@@ -1,5 +1,5 @@
 {
-    "name": "TestModel",,,,,,,,,
+    "name": "TestModel",
     "base": "django.db.models.Model",
     "properties":{
         "datetime_field":{
@@ -11,13 +11,15 @@
             "default": 20,
             "max": 90,
             "min": 3,
-            "description": "My int field"
+            "description": "My int field",
+            "hidden": true
         },
         "string_field":{
             "type": "string",
             "default": "Hello test string",
             "max": 20,
-            "min": 10
+            "min": 10,
+            "hidden": true
         },
         "bool_field":{
             "type": "bool",
@@ -25,11 +27,13 @@
         },
         "object_field":{
             "type": "object",
-            "default": {}
+            "default": {},
+            "hidden": true
         },
         "array_field":{
             "type": "array",
-            "default": []
+            "default": [],
+            "hidden": false
         }
     }
 }

@@ -1,13 +1,11 @@
 from django.test import TestCase
+from django.contrib.auth.models import User as UserModel
+from django.db.models.fields.related import ForeignKey
 import drfs, json
 from drfs.transform import FIELD_MAP
 
 
 class Model(TestCase):
-    def get_model_json(self):
-        with open('./tests/models.json/TestModel.json') as f:
-            modelJson = json.load(f)
-        return modelJson
 
     def test_modelgen(self):
         def test_field(field, settings):
@@ -26,7 +24,8 @@ class Model(TestCase):
                 )
 
         modelClass = drfs.generate_model('TestModel.json')
-        modelJson = self.get_model_json()
+        with open('./tests/models.json/TestModel.json') as f:
+            modelJson = json.load(f)
         opts = modelClass._meta
 
         for field in opts.get_fields():
@@ -37,5 +36,35 @@ class Model(TestCase):
                 modelJson['properties'][field.name]
             )
 
-    def test_modelgen_fail(self):
-        modelClass = drfs.generate_model('TestModelInvalidJson.json')
+
+    def test_no_such_file(self):
+        self.assertRaisesMessage(
+            OSError,
+            "No such file or directory: 'NoSuchModel.json'",
+            drfs.generate_model,
+            'NoSuchModel.json'
+        )
+
+
+    def test_modelgen_field_invalid_type(self):
+        self.assertRaisesMessage(
+            ValueError,
+            "No such field type 'invalid_type'. Field 'no_such_type' declared in 'TestModel' model",
+            drfs.generate_model,
+            'TestModelInvalidFieldType.json'
+        )
+
+
+    def test_relations_belongs_to(self):
+        modelClass = drfs.generate_model('TestModelRalationBelongsTo.json')
+        opts = modelClass._meta
+        belongs_to_field = opts.get_field('belongs_to_field')
+        if not isinstance(belongs_to_field, ForeignKey):
+            self.fail(
+                "Field 'belongs_to_field' in model 'TestModelRalationBelongsTo' not instance of ForeignKey"
+            )
+        remote_field = belongs_to_field.remote_field
+        self.assertEqual(
+            remote_field.model,
+            UserModel
+        )

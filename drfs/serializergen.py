@@ -21,7 +21,9 @@ class SerializerGenFactory(type):
         visible_fields = kwargs.get('visible_fields', None)
         hidden_fields = kwargs.get('hidden_fields', None)
         if visible_fields and hidden_fields:
-            assert "You cant use both visible_fields and hidden_fields options with model "+ model_name +" ."
+            raise ValueError(
+                "You cant use both visible_fields and hidden_fields options with model '"+ model_name +"'"
+            )
 
         s = SerializerFields(_fields)
         all_fields = s.get_fields_name()
@@ -47,7 +49,6 @@ class SerializerGenFactory(type):
             for name, params in modelgen_fields.items():
                 if params.get('hidden', False) and name in all_fields:
                     allowed_fields.remove(name)
-        print allowed_fields
 
         data = s.transform(allowed_fields)
 
@@ -83,7 +84,6 @@ class SerializerGenFactory(type):
 
 
 
-        print 'SERIALIZERGEN::: ' + model_name
         bases = (SerializerMeta,)
         new_cls = type(model_name, bases, data['serializers'])
         return new_cls
