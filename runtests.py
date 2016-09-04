@@ -1,4 +1,4 @@
-import django, sys
+import django, sys, os
 from django.conf import settings
 
 settings.configure(
@@ -8,6 +8,7 @@ settings.configure(
                         'ENGINE': 'django.db.backends.sqlite3',
                     }
         },
+        BASE_DIR=os.path.dirname(__file__),
         INSTALLED_APPS=(
             'django.contrib.auth',
             'django.contrib.contenttypes',
