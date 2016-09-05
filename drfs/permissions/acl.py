@@ -30,17 +30,20 @@ class AuthenticatedAclResolver(AclResolver):
 
 class OwnerAclResolver(AclResolver):
     def get_permission(self, request=None, drf={}, obj=None, **kwargs):
-        is_authenticated = request.user.is_authenticated()
-        if not is_authenticated or not obj:
+        if not request.user.is_authenticated():
             return False
-        try:
+        if hasattr(obj, 'owner'):
             return obj.owner == request.user
-        except Exception as e:
-            return False
+
+        from django.contrib.auth.models import User
+        if isinstance(obj, User):
+            return obj == request.user
+        return False
+
 
 class AdminAclResolver(AclResolver):
     def get_permission(self, request=None, drf={}, **kwargs):
-        return request.user and request.user.is_staff
+        return request.user and getattr(request.user, 'is_staff', False)
 
 
 

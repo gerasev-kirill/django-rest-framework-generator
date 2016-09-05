@@ -2,7 +2,7 @@ from rest_framework import viewsets, filters
 from django.db import models
 
 from . import helpers, decorators
-from .permissions.django import Everyone as AllowEveryone
+from .permissions.drf import Everyone as AllowEveryone
 from .serializergen import SerializerGenFactory
 
 

@@ -32,6 +32,5 @@ class Viewset(TestCase):
         )
         self.assertEqual(
             viewset.permission_classes,
-            [drfs.permissions.django.Everyone]
+            [drfs.permissions.drf.Everyone]
         )
-        print viewset.__dict__

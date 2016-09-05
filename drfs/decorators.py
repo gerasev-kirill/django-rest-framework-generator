@@ -1,4 +1,4 @@
-from .permissions.drfs import PermissionResolver
+from .permissions.acl import PermissionResolver
 from rest_framework import exceptions
 
 Resolver = PermissionResolver()

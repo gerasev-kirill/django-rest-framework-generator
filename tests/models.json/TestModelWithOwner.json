@@ -1,0 +1,45 @@
+{
+    "name": "TestModel",
+    "base": "django.db.models.Model",
+    "properties":{
+        "datetime_field":{
+            "type": "datetime",
+            "auto_now_add": true
+        },
+        "int_field":{
+            "type": "int",
+            "default": 20,
+            "max": 90,
+            "min": 3,
+            "description": "My int field"
+        },
+        "string_field":{
+            "type": "string",
+            "default": "Hello test string",
+            "max": 20,
+            "min": 10
+        },
+        "bool_field":{
+            "type": "bool",
+            "default": false
+        },
+        "object_field":{
+            "type": "object",
+            "default": {}
+        },
+        "array_field":{
+            "type": "array",
+            "default": []
+        }
+    },
+    "relations":{
+        "owner":{
+            "type": "belongsTo",
+            "model": "django.contrib.auth.models.User",
+            "on_delete": "CASCADE",
+            "_serializer": {
+                "returns": "property: id"
+            }
+        }
+    }
+}
