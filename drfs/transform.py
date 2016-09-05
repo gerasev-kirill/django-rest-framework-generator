@@ -19,7 +19,8 @@ FIELD_MAP = {
     'bool': fields.BooleanField,
     'array': ListField,
 
-    'belongsTo': models.ForeignKey
+    'belongsTo': models.ForeignKey,
+    'hasOne': models.OneToOneField
 }
 
 FIELD_SERIALIZER_MAP = {
