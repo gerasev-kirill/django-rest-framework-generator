@@ -1,6 +1,6 @@
 from django.test import TestCase
 from django.contrib.auth.models import User as UserModel
-from django.db.models.fields.related import ForeignKey
+from django.db.models.fields.related import ForeignKey, OneToOneField
 import drfs, json
 from drfs.transform import FIELD_MAP
 
@@ -64,6 +64,21 @@ class Model(TestCase):
                 "Field 'belongs_to_field' in model 'TestModelRalationBelongsTo' not instance of ForeignKey"
             )
         remote_field = belongs_to_field.remote_field
+        self.assertEqual(
+            remote_field.model,
+            UserModel
+        )
+
+    def test_relations_has_one(self):
+        modelClass = drfs.generate_model('TestModelRalationHasOne.json')
+        opts = modelClass._meta
+        has_one_field = opts.get_field('has_one_field')
+        print '!!!!!!!!!!!'
+        if not isinstance(has_one_field, OneToOneField):
+            self.fail(
+                "Field 'has_one_field' in model 'TestModelRalationHasOne' not instance of OneToOneField"
+            )
+        remote_field = has_one_field.remote_field
         self.assertEqual(
             remote_field.model,
             UserModel

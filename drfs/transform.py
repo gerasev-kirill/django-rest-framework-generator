@@ -105,6 +105,14 @@ class Relations(Base):
                 kwargs['on_delete'] = getattr(models, v)
         return field(*args, **kwargs)
 
+    def _hasOne(self, relation_params):
+        field, kwargs = self._get_relation_defaults(relation_params)
+        model = helpers.import_class(relation_params['model'])
+        args = (model,)
+        for k,v in relation_params.items():
+            if k=='on_delete':
+                kwargs['on_delete'] = getattr(models, v)
+        return field(*args, **kwargs)
 
 
 class SerializerFields:

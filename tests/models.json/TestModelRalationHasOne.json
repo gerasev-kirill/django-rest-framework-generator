@@ -1,0 +1,14 @@
+{
+    "name": "TestModel",
+    "base": "django.db.models.Model",
+    "relations":{
+        "has_one_field":{
+            "type": "hasOne",
+            "model": "django.contrib.auth.models.User",
+            "on_delete": "CASCADE",
+            "_serializer": {
+                "returns": "property: id"
+            }
+        }
+    }
+}
