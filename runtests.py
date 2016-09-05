@@ -4,9 +4,9 @@ from django.conf import settings
 settings.configure(
         DEBUG=True,
         DATABASES={
-                    'default': {
-                        'ENGINE': 'django.db.backends.sqlite3',
-                    }
+            'default': {
+                'ENGINE': 'django.db.backends.sqlite3',
+            }
         },
         BASE_DIR=os.path.dirname(__file__),
         INSTALLED_APPS=(
