@@ -65,13 +65,22 @@ class SerializerGenFactory(type):
             if _serializer.has_key('returns'):
                 r = _serializer['returns']
                 field_name = r.replace('property:', '').replace(' ','')
-                def method(self, obj):
-                    if name and not field_name:
-                        obj = getattr(obj, name, None)
-                    elif field_name and field_name != 'self' and obj:
-                        obj = getattr(obj, field_name, None)
-                    return obj
-                setattr(SerializerMeta, 'get_'+name, method)
+                def wrapper(name, field_name):
+                    def method(self, obj):
+                        if name and not field_name:
+                            obj = getattr(obj, name, None)
+                        elif field_name and field_name != 'self' and obj:
+                            obj = getattr(obj, name, None)
+                            if not obj:
+                                return obj
+                            obj = getattr(obj, field_name, None)
+                        return obj
+                    return method
+                setattr(
+                    SerializerMeta,
+                    'get_'+name,
+                    wrapper(name, field_name)
+                )
                 data['serializers'][name] = serializers.SerializerMethodField()
             if _serializer.get('read_only', False):
                 def method(self, obj):
