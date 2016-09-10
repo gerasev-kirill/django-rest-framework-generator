@@ -10,7 +10,8 @@ import drfs, json
 
 
 
-class Mixin(TestCase):
+
+class CountMixin(TestCase):
     def setUp(self):
         self.factory = RequestFactory()
 
@@ -51,4 +52,213 @@ class Mixin(TestCase):
         self.assertEqual(
             response.data['count'],
             2
+        )
+
+
+
+
+class UserRegisterLoginLogoutMixin(TestCase):
+    def setUp(self):
+        self.factory = RequestFactory()
+        self.userFullSerializer = drfs.generate_serializer(
+            UserModel,
+            visible_fields=[
+                'id', 'last_login', 'is_superuser', 'username',
+                'first_name', 'last_name', 'email', 'is_staff',
+                'is_active', 'date_joined', 'groups', 'user_permissions']
+        )
+        self.userData = {
+            'username': 'Test_User',
+            'email': 'Test-email@mail.com',
+            'password':'1'
+        }
+
+    def test_register(self):
+
+        class UserRegisterLoginLogoutMixinTest(drfs.mixins.UserRegisterLoginLogoutMixin, ModelViewSet):
+            queryset = UserModel.objects.all()
+            serializer_class = drfs.generate_serializer(UserModel)
+            user_serializer_class = self.userFullSerializer
+
+        request = self.factory.post('/', self.userData)
+        response = UserRegisterLoginLogoutMixinTest.as_view({'post': 'register'})(request)
+        self.assertEqual(
+            response.status_code,
+            201
+        )
+        user = response.data['user']
+        for key in ['username', 'email']:
+            self.assertEqual(
+                user[key],
+                self.userData[key]
+            )
+        self.assertEqual(
+            user['id'],
+            1
+        )
+        self.assertEqual(
+            response.data['userId'],
+            1
+        )
+        self.assertEqual(
+            len(response.data['token']),
+            40
+        )
+
+        data = self.userData.copy()
+        del data['password']
+        request = self.factory.post('/', data)
+        response = UserRegisterLoginLogoutMixinTest.as_view({'post': 'register'})(request)
+        self.assertEqual(
+            response.status_code,
+            400
+        )
+        self.assertEqual(
+            response.data,
+            {'password': [u'This field is required.']}
+        )
+
+
+        data = self.userData.copy()
+        del data['email']
+        request = self.factory.post('/', data)
+        response = UserRegisterLoginLogoutMixinTest.as_view({'post': 'register'})(request)
+        self.assertEqual(
+            response.status_code,
+            400
+        )
+        self.assertEqual(
+            response.data,
+            {'email': [u'This field is required.']}
+        )
+
+        data = self.userData.copy()
+        del data['username']
+        request = self.factory.post('/', data)
+        response = UserRegisterLoginLogoutMixinTest.as_view({'post': 'register'})(request)
+        self.assertEqual(
+            response.status_code,
+            400
+        )
+        self.assertEqual(
+            response.data,
+            {'username': [u'This field is required.']}
+        )
+
+        # mark username unique for registration
+
+        UserRegisterLoginLogoutMixinTest.user_register_serializer_class = drfs.serializers.rest.UserRegisterEmailUniqueSerializer
+        request = self.factory.post('/', self.userData)
+        response = UserRegisterLoginLogoutMixinTest.as_view({'post': 'register'})(request)
+
+        self.assertEqual(
+            response.status_code,
+            400
+        )
+        self.assertEqual(
+            response.data['non_field_errors'],
+            [u'"email" field should be unique.']
+        )
+        UserModel.objects.all().delete()
+
+
+    def test_login(self):
+
+        class UserRegisterLoginLogoutMixinTest(drfs.mixins.UserRegisterLoginLogoutMixin, ModelViewSet):
+            queryset = UserModel.objects.all()
+            serializer_class = drfs.generate_serializer(UserModel)
+            user_serializer_class = self.userFullSerializer
+
+        request = self.factory.post('/', self.userData)
+        response = UserRegisterLoginLogoutMixinTest.as_view({'post': 'register'})(request)
+
+
+
+        request = self.factory.post('/', {
+            'username': self.userData['username'],
+            'password': self.userData['password']
+        })
+        response = UserRegisterLoginLogoutMixinTest.as_view({'post': 'login'})(request)
+        self.assertEqual(
+            response.status_code,
+            200
+        )
+        user = response.data['user']
+        for key in ['username', 'email']:
+            self.assertEqual(
+                user[key],
+                self.userData[key]
+            )
+        self.assertEqual(
+            user['id'],
+            1
+        )
+        self.assertEqual(
+            response.data['userId'],
+            1
+        )
+        self.assertEqual(
+            len(response.data['token']),
+            40
+        )
+
+        request = self.factory.post('/', {
+            'username': self.userData['username'],
+            'password': "WRONGPASS"
+        })
+        response = UserRegisterLoginLogoutMixinTest.as_view({'post': 'login'})(request)
+        self.assertEqual(
+            response.status_code,
+            400
+        )
+        self.assertEqual(
+            response.data['non_field_errors'],
+            [u'Unable to log in with provided credentials.']
+        )
+
+        request = self.factory.post('/', {
+            'username': 'NOUSER',
+            'password': "WRONGPASS"
+        })
+        response = UserRegisterLoginLogoutMixinTest.as_view({'post': 'login'})(request)
+        self.assertEqual(
+            response.status_code,
+            400
+        )
+        self.assertEqual(
+            response.data['non_field_errors'],
+            [u'Unable to log in with provided credentials.']
+        )
+        UserModel.objects.all().delete()
+
+
+    def test_logout(self):
+
+        class UserRegisterLoginLogoutMixinTest(drfs.mixins.UserRegisterLoginLogoutMixin, ModelViewSet):
+            queryset = UserModel.objects.all()
+            serializer_class = drfs.generate_serializer(UserModel)
+            user_serializer_class = self.userFullSerializer
+
+        request = self.factory.post('/', self.userData)
+        response = UserRegisterLoginLogoutMixinTest.as_view({'post': 'register'})(request)
+
+        token = response.data['token']
+
+        request = self.factory.delete('/', HTTP_AUTHORIZATION="Token " + token)
+        response = UserRegisterLoginLogoutMixinTest.as_view({'delete': 'logout'})(request)
+        self.assertEqual(
+            response.status_code,
+            204
+        )
+        self.assertEqual(
+            response.data,
+            {}
+        )
+
+
+        request = self.factory.delete('/', HTTP_AUTHORIZATION="Token " + token)
+        response = UserRegisterLoginLogoutMixinTest.as_view({'delete': 'logout'})(request)
+        self.assertEqual(
+            response.data,
+            {u'detail': u'Invalid token.'}
         )

@@ -13,6 +13,8 @@ settings.configure(
             'django.contrib.auth',
             'django.contrib.contenttypes',
             'django.contrib.sessions',
+            'rest_framework',
+            'rest_framework.authtoken',
             'drfs',
             'tests'
         )
@@ -28,6 +30,6 @@ except ImportError:
     from django.test.runner import DiscoverRunner
     test_runner = DiscoverRunner(verbosity=1)
 
-failures = test_runner.run_tests(['tests.test_mixins'])
+failures = test_runner.run_tests(['tests'])
 if failures:
     sys.exit(failures)
