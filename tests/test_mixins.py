@@ -262,3 +262,43 @@ class UserRegisterLoginLogoutMixin(TestCase):
             response.data,
             {u'detail': u'Invalid token.'}
         )
+
+
+class QuerysetExistsMixin(TestCase):
+    def setUp(self):
+        self.factory = RequestFactory()
+
+    def test_count(self):
+        class QuerysetExistsMixinTest(drfs.mixins.QuerysetExistsModelMixin, ModelViewSet):
+            queryset = UserModel.objects.all()
+            serializer_class = drfs.generate_serializer(UserModel)
+            filter_backends = (filters.DjangoFilterBackend,)
+            filter_fields = {'username':['contains'], }
+
+        for s in ["test string 1", "test string 2", "another string 3"]:
+            UserModel.objects.create(
+                username=s,
+                email=s+"@mail.com",
+                password="1"
+            )
+
+        request = self.factory.get('/')
+        response = QuerysetExistsMixinTest.as_view({'get': 'queryset_exists'})(request)
+        self.assertEqual(
+            response.data['exists'],
+            True
+        )
+
+        request = self.factory.get('/?username__contains=test')
+        response = QuerysetExistsMixinTest.as_view({'get': 'queryset_exists'})(request)
+        self.assertEqual(
+            response.data['exists'],
+            True
+        )
+
+        request = self.factory.get('/?username__contains=NONAME')
+        response = QuerysetExistsMixinTest.as_view({'get': 'queryset_exists'})(request)
+        self.assertEqual(
+            response.data['exists'],
+            False
+        )
