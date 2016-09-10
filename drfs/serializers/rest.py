@@ -54,11 +54,22 @@ class UserRegisterSerializer(serializers.Serializer):
         return True
 
     def validate(self, attrs):
+        fields = self.get_fields()
+
         username = attrs.get('username')
         email = attrs.get('email')
         password = attrs.get('password')
-        if not username or not email or not password:
-            msg = _('Must include "username" and "email" and "password".')
+
+        _err_must_include = []
+        if not username and fields['username'].required:
+            _err_must_include.append('"username"')
+        if not email and fields['email'].required:
+            _err_must_include.append('"username"')
+        if not password and fields['password'].required:
+            _err_must_include.append('"password"')
+
+        if _err_must_include:
+            msg = _('Must include '+ ' and '.join(_err_must_include) +'.')
             raise serializers.ValidationError(msg)
 
         if not self.is_email_unique(email):
@@ -77,20 +88,19 @@ class UserRegisterSerializer(serializers.Serializer):
 
     def create(self, validated_data):
         try:
-            instance = self.ModelClass(**validated_data)
-            instance.set_password(validated_data['password'])
+            instance = self.ModelClass.objects.create_user(**validated_data)
             instance.save()
         except TypeError as exc:
             msg = (
-                'Got a `TypeError` when calling `%s()`. '
+                'Got a `TypeError` when calling `%s.objects.create_user()`. '
                 'This may be because you have a writable field on the '
                 'serializer class that is not a valid argument to '
                 '`%s.objects.create()`. You may need to make the field '
                 'read-only, or override the %s.create() method to handle '
                 'this correctly.\nOriginal exception text was: %s.' %
                 (
-                    ModelClass.__name__,
-                    ModelClass.__name__,
+                    self.ModelClass.__name__,
+                    self.ModelClass.__name__,
                     self.__class__.__name__,
                     exc
                 )
