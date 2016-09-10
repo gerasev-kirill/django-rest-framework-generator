@@ -1,4 +1,4 @@
-from . import modelgen
+from . import modelgen, mixins
 from .serializergen import SerializerGenFactory
 from .viewsetgen import ViewsetGenFactory
 import json, os, errno

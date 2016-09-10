@@ -73,7 +73,6 @@ class Model(TestCase):
         modelClass = drfs.generate_model('TestModelRalationHasOne.json')
         opts = modelClass._meta
         has_one_field = opts.get_field('has_one_field')
-        print '!!!!!!!!!!!'
         if not isinstance(has_one_field, OneToOneField):
             self.fail(
                 "Field 'has_one_field' in model 'TestModelRalationHasOne' not instance of OneToOneField"
