@@ -8,7 +8,7 @@ os.chdir(os.path.normpath(os.path.join(os.path.abspath(__file__), os.pardir)))
 
 setup(
     name='django-rest-framework-generator',
-    version='0.4.15',
+    version='0.4.16',
     packages=['drfs'],
     include_package_data=True,
     license='BSD License',
