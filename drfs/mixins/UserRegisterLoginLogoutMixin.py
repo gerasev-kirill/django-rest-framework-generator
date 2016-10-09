@@ -1,6 +1,7 @@
 from rest_framework.decorators import list_route, detail_route
 from rest_framework.response import Response
 from rest_framework.authentication import TokenAuthentication
+from rest_framework import exceptions
 
 from ..serializers import rest as serializers_rest
 
@@ -120,3 +121,32 @@ class UserRegisterLoginLogoutMixin(object):
         user, token = tAuth.authenticate(request)
         self.perform_logout(user, token)
         return Response({}, status=204)
+
+
+
+    def perform_reset_password(self, user, token, data):
+        pass
+
+    @list_route(methods=['post'])
+    def reset(self, request, *args, **kwargs):
+        tAuth = TokenAuthentication()
+        user, token = tAuth.authenticate(request)
+        self.perform_reset_password(user, token, self.request.data)
+        return Response({}, status=204)
+
+
+
+    def perform_set_password(self, user, new_password):
+        user.set_password(new_password)
+        user.save()
+
+    @list_route(methods=['post'])
+    def set_password(self, request, *args, **kwargs):
+        password = self.request.data.get('password', None)
+        if not password:
+            raise exceptions.NotAcceptable("New password field 'password' required")
+
+        tAuth = TokenAuthentication()
+        user, token = tAuth.authenticate(request)
+        self.perform_set_password(user, password)
+        return Response({})
