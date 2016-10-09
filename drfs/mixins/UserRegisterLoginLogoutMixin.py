@@ -124,14 +124,21 @@ class UserRegisterLoginLogoutMixin(object):
 
 
 
-    def perform_reset_password(self, user, token, data):
+    def perform_reset_password(self, user, token):
         pass
 
     @list_route(methods=['post'])
     def reset(self, request, *args, **kwargs):
-        tAuth = TokenAuthentication()
-        user, token = tAuth.authenticate(request)
-        self.perform_reset_password(user, token, self.request.data)
+        email = request.data.get('email', None)
+        if not email:
+            raise exceptions.NotAcceptable("Field 'email' required")
+        try:
+            user = self.queryset.get(email=email)
+        except:
+            raise exceptions.NotAcceptable("Email not found")
+        from rest_framework.authtoken.models import Token
+        token, created = Token.objects.get_or_create(user=user)
+        self.perform_reset_password(user, token)
         return Response({}, status=204)
 
 
@@ -142,7 +149,7 @@ class UserRegisterLoginLogoutMixin(object):
 
     @list_route(methods=['post'])
     def set_password(self, request, *args, **kwargs):
-        password = self.request.data.get('password', None)
+        password = request.data.get('password', None)
         if not password:
             raise exceptions.NotAcceptable("New password field 'password' required")
 
