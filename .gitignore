@@ -3,4 +3,6 @@ dist
 *.pyc
 *.pyo
 ap2
+*.sqlite3
 .*
+!.gitignore

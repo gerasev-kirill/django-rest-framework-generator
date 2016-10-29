@@ -1,4 +1,5 @@
 from django.db import models
+from django.dispatch import receiver
 from django.db.models import fields
 from jsonfield import JSONField
 from django.apps import apps
@@ -20,7 +21,8 @@ FIELD_MAP = {
     'array': ListField,
 
     'belongsTo': models.ForeignKey,
-    'hasOne': models.OneToOneField
+    'hasOne': models.OneToOneField,
+    'embedsMany': ListField
 }
 
 FIELD_SERIALIZER_MAP = {
@@ -35,11 +37,10 @@ class Base:
         fields = {}
         for field_name, field_params in self.data.items():
             _type = field_params['type']
-            try:
-                func = getattr(self, '_' + _type)
-            except:
-                raise ValueError("No such field type '"+_type+"'. Field '"+field_name+"' declared in '"+self.modelname+"' model")
-            fields[field_name] = func(field_params)
+            func = getattr(self, '_' + _type, None)
+            if not func:
+                func = getattr(self, '_default')
+            fields[field_name] = func(field_params, field_name=field_name)
         return fields
 
 
@@ -52,13 +53,17 @@ class Fields(Base):
         kwargs = {}
         if params.has_key('default'):
             kwargs['default'] = params['default']
-        return (FIELD_MAP[params['type']], kwargs)
+        if FIELD_MAP.has_key(params['type']):
+            return (FIELD_MAP[params['type']], kwargs)
+        # regular django field
+        f = helpers.import_class(params['type'])
+        return (f, kwargs)
 
-    def __default(self, field_params):
+    def _default(self, field_params, **kwargs):
         field, kwargs = self._get_field_defaults(field_params)
         return field(**kwargs)
 
-    def _string(self, field_params):
+    def _string(self, field_params, **kwargs):
         field, kwargs = self._get_field_defaults(field_params)
         kwargs['blank'] = True
         for k,v in field_params.items():
@@ -66,37 +71,58 @@ class Fields(Base):
                 kwargs['max_length'] = v
         return field(**kwargs)
 
-    def _datetime(self, field_params):
+    def _datetime(self, field_params, **kwargs):
         field, kwargs = self._get_field_defaults(field_params)
         for k,v in field_params.items():
             if k=='auto_now_add':
                 kwargs['auto_now_add'] = v
         return field(**kwargs)
 
-    def _object(self, field_params):
-        return self.__default(field_params)
+    def _object(self, field_params, **kwargs):
+        return self._default(field_params)
 
-    def _int(self, field_params):
-        return self.__default(field_params)
+    def _int(self, field_params, **kwargs):
+        return self._default(field_params)
 
-    def _bool(self, field_params):
-        return self.__default(field_params)
+    def _bool(self, field_params, **kwargs):
+        return self._default(field_params)
 
-    def _array(self, field_params):
-        return self.__default(field_params)
+    def _array(self, field_params, **kwargs):
+        return self._default(field_params)
+
+
+REGISTERED_RECEIVERS = {}
+
+def register_on_delete_embedsMany(model_class, fields):
+    model_name = model_class._meta.object_name
+    if REGISTERED_RECEIVERS.has_key(model_name):
+        if REGISTERED_RECEIVERS[model_name].has_key('delete_embedsMany'):
+            return
+    else:
+        REGISTERED_RECEIVERS[model_name] = {}
+    REGISTERED_RECEIVERS[model_name]['delete_embedsMany'] = True
+
+    @receiver(models.signals.pre_delete, sender=model_class)
+    def on_delete(sender, instance, **kwargs):
+        for fname, embedded_model_class in fields.items():
+            ids = getattr(instance, fname, [])
+            if ids:
+                embedded_model_class.objects.filter(id__in=ids).delete()
 
 
 
 class Relations(Base):
-    def __init__(self, relations):
+    def __init__(self, relations, model_class=None):
         self.data = relations
+        self.model_class = model_class
+        self.receivers = {'embedsMany':[]}
 
-    def _get_relation_defaults(self, params):
+    def _get_relation_defaults(self, params, **kwargs):
         kwargs = {}
         return (FIELD_MAP[params['type']], kwargs)
 
 
-    def _belongsTo(self, relation_params):
+    def _belongsTo(self, relation_params, **kwargs):
         field, kwargs = self._get_relation_defaults(relation_params)
         model = helpers.import_class(relation_params['model'])
         args = (model,)
@@ -105,7 +131,7 @@ class Relations(Base):
                 kwargs['on_delete'] = getattr(models, v)
         return field(*args, **kwargs)
 
-    def _hasOne(self, relation_params):
+    def _hasOne(self, relation_params, **kwargs):
         field, kwargs = self._get_relation_defaults(relation_params)
         model = helpers.import_class(relation_params['model'])
         args = (model,)
@@ -113,6 +139,18 @@ class Relations(Base):
             if k=='on_delete':
                 kwargs['on_delete'] = getattr(models, v)
         return field(*args, **kwargs)
+
+    def _embedsMany(self, relation_params, field_name=None):
+        model = helpers.import_class(relation_params['model'])
+        data = {}
+        data[field_name] = model
+        self.receivers['embedsMany'].append(data)
+        return FIELD_MAP['array'](default=[])
+
+    def register_receivers(self, model_class):
+        if self.receivers['embedsMany']:
+            register_on_delete_embedsMany(model_class, self.receivers['embedsMany'])
+
 
 
 class SerializerFields:

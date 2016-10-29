@@ -24,4 +24,7 @@ class ModelGenFactory(type):
         fields['__module__'] = module_name
         new_cls = type(name, bases, fields)
         setattr(new_cls, 'MODEL_GEN', definition)
+        # helpers for removing hasMany objects
+        r.register_receivers(new_cls)
+
         return new_cls

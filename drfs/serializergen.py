@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from .transform import SerializerFields
-
+from . import helpers
 
 
 
@@ -8,6 +8,11 @@ from .transform import SerializerFields
 
 class SerializerGenFactory(type):
     def __new__(self, model_class, **kwargs):
+        from .models import L10nFile as L10nFileModelClass
+        from .serializers.models import L10nFile as L10nFileSerializerClass
+        if model_class == L10nFileModelClass:
+            return L10nFileSerializerClass
+
         _fields = model_class._meta.get_fields()
         definition = getattr(model_class, 'MODEL_GEN', {})
 
@@ -57,8 +62,27 @@ class SerializerGenFactory(type):
                 model = model_class
                 fields = data['fields']
 
+        def generate_embeds_many_serializer(child_model_class, _field_name):
+            child_ser = SerializerGenFactory(child_model_class)
+            def get_data(self, obj):
+                ids = getattr(obj, _field_name, [])
+                if not ids:
+                    return []
+                ser = child_ser(child_model_class.objects.filter(pk__in=ids), many=True)
+                return ser.data
+            return get_data
 
         for name, params in modelgen_fields.items():
+            if params['type'] == 'embedsMany':
+                child_model_class = helpers.import_class(params['model'])
+                setattr(
+                    SerializerMeta,
+                    'get_'+name,
+                    generate_embeds_many_serializer(child_model_class, name)
+                )
+                data['serializers'][name] = serializers.SerializerMethodField()
+                continue
+
             _serializer = params.get('_serializer', None)
             if not _serializer:
                 continue

@@ -8,3 +8,6 @@ install_virtualenv:
 
 run_tests:
 	bash -c "source ap2; python2 ./runtests.py"
+
+mkmigration:
+	bash -c "source ap2; python2 ./mkmigration.py"
