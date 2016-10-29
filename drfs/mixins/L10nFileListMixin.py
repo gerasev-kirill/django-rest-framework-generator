@@ -10,6 +10,7 @@ from django.core.files.uploadedfile import InMemoryUploadedFile
 
 
 class L10nFileListMixin(object):
+    l10nfile_list_allowed_fields = ('files',)
 
     def check_upload_field_exists(self, forModelField):
         queryset = self.get_queryset()
@@ -20,8 +21,8 @@ class L10nFileListMixin(object):
             if field.name == forModelField:
                 exist = True
                 break
-        if not exist:
-            raise exceptions.NotAcceptable(detail="Unknown field \""+forModelField+"\" for model \""+modelClass._meta.object_name+"\".")
+        if not exist or forModelField not in self.l10nfile_list_allowed_fields:
+            raise exceptions.NotAcceptable(detail="Unknown L10nFile field \""+forModelField+"\" for model \""+modelClass._meta.object_name+"\".")
         return True
 
     def get_l10nfile_id_from_options(self, data):
