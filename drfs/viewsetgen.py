@@ -89,7 +89,7 @@ class ViewsetGenFactory(type):
             model_acl = kwargs.get('acl')
         new_cls = type(name, tuple(classes), params)
         for prop in dir(new_cls):
-            if prop in ['list', 'retrieve', 'update', 'update_partial', 'create', 'destroy']:
+            if prop in ['list', 'retrieve', 'update', 'partial_update', 'create', 'destroy']:
                 setattr(new_cls, prop,
                     decorators.drf_action_decorator(
                         getattr(new_cls, prop),

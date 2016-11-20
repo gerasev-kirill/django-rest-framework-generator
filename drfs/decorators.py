@@ -4,8 +4,62 @@ from rest_framework import exceptions
 Resolver = PermissionResolver()
 
 
-
-
+DEFAULT_DOC_STRINGS = {
+    "list": """
+    Find all instances of the model matched by filter from the data source
+    ---
+    """,
+    "create": """
+    Create a new instance of the model and persist it into the data source
+    ---
+    """,
+    "retrieve": """
+    Find a model instance by id from the data source
+    ---
+    parameters:
+        - name: pk
+          description: Model id
+          required: true
+          type: string
+          paramType: query
+    """,
+    "update": """
+    Update attributes for a model instance and persist it into the data source
+    ---
+    parameters:
+        - name: pk
+          description: Model id
+          required: true
+          type: string
+          paramType: query
+    """,
+    "partial_update": """
+    Partial update attributes for a model instance and persist it into the data source
+    ---
+    parameters:
+        - name: pk
+          description: Model id
+          required: true
+          type: string
+          paramType: query
+    """,
+    "destroy": """
+    Delete a model instance by id from the data source
+    . Returns 204 on success, 404 if object doesn't exists
+    ---
+    type:
+    omit_serializer: true
+    responseMessages:
+        - code: 204
+          message: No content
+    parameters:
+        - name: pk
+          description: Model id
+          required: true
+          type: string
+          paramType: query
+    """
+}
 
 
 def drf_action_decorator(func, model_acl):
@@ -20,15 +74,23 @@ def drf_action_decorator(func, model_acl):
             'request': self.request,
             'model_acl': model_acl
         }
-        if lookup_url_kwarg in kwargs and kwargs[lookup_url_kwarg]!='-':
+        if lookup_url_kwarg in kwargs and kwargs[lookup_url_kwarg] != '-':
             resolver_kwargs['obj'] = self.get_object()
 
         resolved_permission = Resolver.resolve_permission(**resolver_kwargs)
         if resolved_permission == 'DENY':
-            raise exceptions.PermissionDenied(detail="DRFS: you don't have permission")
+            raise exceptions.PermissionDenied(
+                detail="DRFS: you don't have permission")
         return func(self, *args, **kwargs)
+
+
     if getattr(func, 'bind_to_methods', None):
         wrapper.bind_to_methods = func.bind_to_methods
         wrapper.detail = func.detail
         wrapper.kwargs = func.kwargs
+    # swagger documentation
+    if func.__doc__:
+        wrapper.__doc__ = func.__doc__
+    else:
+        wrapper.__doc__ = DEFAULT_DOC_STRINGS.get(func.__name__, "")
     return wrapper
