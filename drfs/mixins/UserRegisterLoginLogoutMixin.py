@@ -102,6 +102,20 @@ class UserRegisterLoginLogoutMixin(object):
 
     @list_route(methods=['post'])
     def login(self, request, *args, **kwargs):
+        """
+        Login a user with username/email and password(depend on serializer)
+        ---
+        omit_serializer: true
+        type:
+            token:
+              required: true
+              type: string
+            userId:
+              required: true
+              type: number
+            user:
+              type: object
+        """
         serializer = self.get_user_login_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         self.perform_login(serializer)
@@ -117,6 +131,14 @@ class UserRegisterLoginLogoutMixin(object):
 
     @list_route(methods=['delete'])
     def logout(self, request, *args, **kwargs):
+        """
+        Logout a user with access token
+        ---
+        omit_serializer: true
+        responseMessages:
+            - code: 204
+              message: Request was successful
+        """
         tAuth = TokenAuthentication()
         user, token = tAuth.authenticate(request)
         self.perform_logout(user, token)

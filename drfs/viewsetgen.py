@@ -1,9 +1,12 @@
 from rest_framework import viewsets, filters
 from django.db import models
+from django.conf import settings
 
 from . import helpers, decorators
 from .permissions.drf import Everyone as AllowEveryone
 from .serializergen import SerializerGenFactory
+
+REST_FRAMEWORK = getattr(settings, 'REST_FRAMEWORK', {})
 
 
 
@@ -11,7 +14,14 @@ from .serializergen import SerializerGenFactory
 def getViewsetParams(model_class, kwargs):
     MODEL_GEN = getattr(model_class, 'MODEL_GEN', {})
     viewsetPref = MODEL_GEN.get('viewset', {})
-    filter_backends = (filters.DjangoFilterBackend,)
+    if REST_FRAMEWORK.get('DEFAULT_FILTER_BACKENDS', None):
+        filter_backends = [
+            helpers.import_class(m)
+            for m in REST_FRAMEWORK['DEFAULT_FILTER_BACKENDS']
+        ]
+    else:
+        from rest_framework import filters
+        filter_backends =  (filters.DjangoFilterBackend,)
 
     if 'queryset' in kwargs.keys():
         queryset = kwargs['queryset']
@@ -100,7 +110,6 @@ class ViewsetGenFactory(type):
             func = getattr(new_cls, prop)
             httpmethods = getattr(func, 'bind_to_methods', None)
             if httpmethods:
-                print 'DECORATED '+ prop
                 setattr(new_cls, prop,
                     decorators.drf_action_decorator(
                         func,

@@ -15,9 +15,15 @@ class CountModelMixin(object):
         ---
         omit_serializer: true
         type:
-          count:
-            required: true
-            type: number
+            count:
+              required: true
+              type: number
+        parameters:
+            - name: where
+              description: Criteria to match model instances. <a target="_blank" href="https://loopback.io/doc/en/lb2/Where-filter.html">Docs here</a> and <a target="_blank" href="https://loopback.io/doc/en/lb2/Querying-data.html#using-stringified-json-in-rest-queries">here</a>
+              required: false
+              type: objects
+              paramType: query
         """
         queryset = self.filter_queryset(self.get_queryset())
         return Response({'count':queryset.count()})

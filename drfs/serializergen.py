@@ -58,6 +58,21 @@ class SerializerGenFactory(type):
         data = s.transform(allowed_fields)
 
         class SerializerMeta(serializers.HyperlinkedModelSerializer):
+            def __init__(self, *args, **kwargs):
+                super(SerializerMeta, self).__init__(*args, **kwargs)
+                context = kwargs.get('context', {})
+                request = context.get('request', {})
+                lb_fields = getattr(context['request'], 'LB_FILTER_FIELDS', {})
+                if lb_fields:
+                    existing = self.fields.keys()
+                    if lb_fields.get('only', None):
+                        for f in existing:
+                            if f not in lb_fields['only']:
+                                self.fields.pop(f)
+                    elif lb_fields.get('defer', None):
+                        for f in lb_fields['defer']:
+                            if f in existing:
+                                self.fields.pop(f)
             class Meta:
                 model = model_class
                 fields = data['fields']
