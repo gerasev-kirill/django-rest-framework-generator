@@ -115,6 +115,15 @@ class UserRegisterLoginLogoutMixin(object):
               type: number
             user:
               type: object
+        parameters:
+            - name: username
+              required: true
+              type: string
+              paramType: form
+            - name: password
+              required: true
+              type: string
+              paramType: form
         """
         serializer = self.get_user_login_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)

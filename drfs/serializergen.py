@@ -24,7 +24,7 @@ class SerializerGenFactory(type):
 
 
         visible_fields = kwargs.get('visible_fields', None)
-        hidden_fields = kwargs.get('hidden_fields', None)
+        hidden_fields = kwargs.get('hidden_fields', definition.get('hidden', []))
         if visible_fields and hidden_fields:
             raise ValueError(
                 "You cant use both visible_fields and hidden_fields options with model '"+ model_name +"'"
@@ -62,7 +62,7 @@ class SerializerGenFactory(type):
                 super(SerializerMeta, self).__init__(*args, **kwargs)
                 context = kwargs.get('context', {})
                 request = context.get('request', {})
-                lb_fields = getattr(context['request'], 'LB_FILTER_FIELDS', {})
+                lb_fields = getattr(request, 'LB_FILTER_FIELDS', {})
                 if lb_fields:
                     existing = self.fields.keys()
                     if lb_fields.get('only', None):

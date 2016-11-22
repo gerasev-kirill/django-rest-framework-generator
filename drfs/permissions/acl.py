@@ -43,4 +43,6 @@ class OwnerAclResolver(AclResolver):
 
 class AdminAclResolver(AclResolver):
     def get_permission(self, request=None, drf={}, **kwargs):
-        return request.user and getattr(request.user, 'is_staff', False)
+        is_superuser = getattr(request.user, 'is_superuser', False)
+        is_staff = getattr(request.user, 'is_staff', False)
+        return is_staff or is_superuser

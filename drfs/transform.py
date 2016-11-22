@@ -44,6 +44,16 @@ class Base:
         return fields
 
 
+def fixChoices(choices):
+    fix = []
+    if not isinstance(choices[0], tuple) and not isinstance(choices[0], list):
+        return tuple([
+            (c,c)
+            for c in choices
+        ])
+    return tuple(choices)
+
+
 class Fields(Base):
     def __init__(self, fields, modelname):
         self.modelname = modelname
@@ -53,6 +63,10 @@ class Fields(Base):
         kwargs = {}
         if params.has_key('default'):
             kwargs['default'] = params['default']
+
+        if params.has_key('choices'):
+            kwargs['choices'] = fixChoices(params['choices'])
+
         if FIELD_MAP.has_key(params['type']):
             return (FIELD_MAP[params['type']], kwargs)
         # regular django field

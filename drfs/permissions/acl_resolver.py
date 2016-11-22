@@ -1,3 +1,4 @@
+import re
 from rest_framework import exceptions
 from .acl import EveryoneAclResolver, UnauthenticatedAclResolver, AuthenticatedAclResolver, OwnerAclResolver, AdminAclResolver
 
@@ -41,8 +42,10 @@ class PermissionResolver(object):
                     obj=obj
                 )
                 if permission:
-                    if acl['principalId'] == '$unauthenticated' and acl['permission'] == 'DENY':
-                        raise exceptions.NotAuthenticated("DRFS: Not Authenticated")
                     resolved = acl['permission']
+                    #if acl['principalId'] == '$unauthenticated' and permission == 'DENY':
+                    #    raise exceptions.NotAuthenticated("DRFS: Not Authenticated")
+                    if resolved == 'ALLOW':
+                        break
 
         return resolved
