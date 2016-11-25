@@ -18,7 +18,7 @@ class ProcessWhereFilter:
         q = Q()
 
         if 'or' in _where.keys():
-            if not isinstance(where['or'], list):
+            if not isinstance(_where['or'], list):
                 raise exceptions.ParseError("Parameter 'or' for parameter 'where' expected to be <type 'array'>, got - " + str(type(_where['or'])))
             for v in _where['or']:
                 q |= self.generate_rawq(v)
@@ -105,7 +105,7 @@ class ProcessWhereFilter:
 
     def lb_query_to_rawq(self, property, data):
         q = {'filter':{}, 'exclude':{}}
-        if isinstance(data, unicode) or isinstance(data, str) or isinstance(data, bool) or isinstance(data, int) or isinstance(data, float):
+        if isinstance(data, unicode) or isinstance(data, str) or isinstance(data, bool) or isinstance(data, int) or isinstance(data, float) or data is None:
             data = self.validate_value(property, data)
             q['filter'][property] = data
             return q

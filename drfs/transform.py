@@ -3,6 +3,7 @@ from django.dispatch import receiver
 from django.db.models import fields
 from jsonfield import JSONField
 from django.apps import apps
+from django.conf import settings
 from rest_framework import fields as rf_fields
 import json
 
@@ -22,6 +23,7 @@ FIELD_MAP = {
 
     'belongsTo': models.ForeignKey,
     'hasOne': models.OneToOneField,
+    'hasMany': models.ManyToManyField,
     'embedsMany': ListField
 }
 
@@ -45,8 +47,12 @@ class Base:
 
 
 def fixChoices(choices):
-    fix = []
     if not isinstance(choices[0], tuple) and not isinstance(choices[0], list):
+        if isinstance(choices[0], tuple) or isinstance(choices[0], list):
+            return tuple([
+                tuple(c)
+                for c in choices
+            ])
         return tuple([
             (c,c)
             for c in choices
@@ -66,6 +72,8 @@ class Fields(Base):
 
         if params.has_key('choices'):
             kwargs['choices'] = fixChoices(params['choices'])
+        if params.has_key('description'):
+            kwargs['help_text'] = params['description']
 
         if FIELD_MAP.has_key(params['type']):
             return (FIELD_MAP[params['type']], kwargs)
@@ -96,7 +104,11 @@ class Fields(Base):
         return self._default(field_params)
 
     def _int(self, field_params, **kwargs):
-        return self._default(field_params)
+        field, kwargs = self._get_field_defaults(field_params)
+        if not field_params.get('required', True):
+            kwargs['blank'] = True
+            kwargs['null'] = True
+        return field(**kwargs)
 
     def _bool(self, field_params, **kwargs):
         return self._default(field_params)
@@ -132,13 +144,21 @@ class Relations(Base):
         self.receivers = {'embedsMany':[]}
 
     def _get_relation_defaults(self, params, **kwargs):
-        kwargs = {}
+        kwargs = {"blank":True, "null":True}
         return (FIELD_MAP[params['type']], kwargs)
+
+    def _get_model_class(self, model_path):
+        if model_path=='django.contrib.auth.models.User' or model_path=='AUTH_USER_MODEL':
+            if getattr(settings, 'AUTH_USER_MODEL', False):
+                return settings.AUTH_USER_MODEL
+        if '.' not in model_path:
+            return model_path
+        return helpers.import_class(model_path)
 
 
     def _belongsTo(self, relation_params, **kwargs):
         field, kwargs = self._get_relation_defaults(relation_params)
-        model = helpers.import_class(relation_params['model'])
+        model = self._get_model_class(relation_params['model'])
         args = (model,)
         for k,v in relation_params.items():
             if k=='on_delete':
@@ -147,15 +167,23 @@ class Relations(Base):
 
     def _hasOne(self, relation_params, **kwargs):
         field, kwargs = self._get_relation_defaults(relation_params)
-        model = helpers.import_class(relation_params['model'])
+        model = self._get_model_class(relation_params['model'])
         args = (model,)
         for k,v in relation_params.items():
             if k=='on_delete':
                 kwargs['on_delete'] = getattr(models, v)
         return field(*args, **kwargs)
 
+    def _hasMany(self, relation_params, **kwargs):
+        field, kwargs = self._get_relation_defaults(relation_params)
+        model = self._get_model_class(relation_params['model'])
+        args = (model,)
+        if 'null' in kwargs.keys():
+            del kwargs['null']
+        return field(*args, **kwargs)
+
     def _embedsMany(self, relation_params, field_name=None):
-        model = helpers.import_class(relation_params['model'])
+        model = self._get_model_class(relation_params['model'])
         data = {}
         data[field_name] = model
         self.receivers['embedsMany'].append(data)
@@ -194,7 +222,7 @@ class SerializerFields:
             fields.append(_f.name)
             ser = self.__find_serializer(_f)
             if ser:
-                serializers[_f.name] = ser()
+                serializers[_f.name] = ser(help_text=getattr(_f, 'help_text', ''))
         return {
             'fields': fields,
             'serializers': serializers

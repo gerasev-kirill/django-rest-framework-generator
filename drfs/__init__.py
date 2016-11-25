@@ -28,6 +28,11 @@ def find_model_definition(name):
     return (module_name, path)
 
 
+def get_model(name, app=None):
+    if app:
+        from django.apps import apps
+        return apps.get_model(app, name)
+    return generate_model(name+'.json')
 
 def generate_model(name):
     name = os.path.basename(name)
