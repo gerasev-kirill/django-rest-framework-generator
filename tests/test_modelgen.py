@@ -49,7 +49,7 @@ class Model(TestCase):
     def test_modelgen_field_invalid_type(self):
         self.assertRaisesMessage(
             ValueError,
-            "No such field type 'invalid_type'. Field 'no_such_type' declared in 'TestModel' model",
+            "No such field type 'invalid_type'. Field declared in 'TestModel' model",
             drfs.generate_model,
             'TestModelInvalidFieldType.json'
         )

@@ -33,7 +33,7 @@ class ViewsetAcl(TestCase):
             )
             self.assertEqual(
                 response.data['detail'],
-                "DRFS: you don't have permission"
+                "DRFS: Permission Denied"
             )
 
         def test_user_allow(user):
@@ -93,7 +93,7 @@ class ViewsetAcl(TestCase):
         )
         self.assertEqual(
             response.data['detail'],
-            "DRFS: you don't have permission"
+            "DRFS: Permission Denied"
         )
 
         request.user = self.user
@@ -137,7 +137,7 @@ class ViewsetAcl(TestCase):
         )
         self.assertEqual(
             response.data['detail'],
-            "DRFS: you don't have permission"
+            "DRFS: Permission Denied"
         )
 
 
@@ -172,7 +172,7 @@ class ViewsetAcl(TestCase):
         )
         self.assertEqual(
             response.data['detail'],
-            "DRFS: you don't have permission"
+            "DRFS: Permission Denied"
         )
         obj.delete()
 
@@ -216,7 +216,7 @@ class ViewsetAcl(TestCase):
         )
         self.assertEqual(
             response.data['detail'],
-            "DRFS: you don't have permission"
+            "DRFS: Permission Denied"
         )
 
     def test_complex_acl(self):

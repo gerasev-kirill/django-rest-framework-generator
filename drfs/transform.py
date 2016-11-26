@@ -78,7 +78,10 @@ class Fields(Base):
         if FIELD_MAP.has_key(params['type']):
             return (FIELD_MAP[params['type']], kwargs)
         # regular django field
-        f = helpers.import_class(params['type'])
+        try:
+            f = helpers.import_class(params['type'])
+        except ImportError:
+            raise ValueError("No such field type '"+params['type']+"'. Field declared in '"+self.modelname+"' model")
         return (f, kwargs)
 
     def _default(self, field_params, **kwargs):
