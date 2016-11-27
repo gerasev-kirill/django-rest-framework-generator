@@ -1,10 +1,12 @@
 {
-    "name": "TestModelRalationHasOne",
+    "name": "ModelWithRefToTestModel",
     "base": "django.db.models.Model",
+    "properties":{
+    },
     "relations":{
         "has_one_field":{
-            "type": "hasOne",
-            "model": "django.contrib.auth.models.User",
+            "type": "belongsTo",
+            "model": "TestModel2",
             "on_delete": "CASCADE",
             "_serializer": {
                 "returns": "property: id"

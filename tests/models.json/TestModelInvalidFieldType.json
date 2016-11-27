@@ -1,5 +1,5 @@
 {
-    "name": "TestModel",
+    "name": "TestModelInvalidFieldType",
     "base": "django.db.models.Model",
     "properties":{
         "no_such_type":{

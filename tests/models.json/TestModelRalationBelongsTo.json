@@ -1,5 +1,5 @@
 {
-    "name": "TestModel",
+    "name": "TestModelRalationBelongsTo",
     "base": "django.db.models.Model",
     "relations":{
         "belongs_to_field":{

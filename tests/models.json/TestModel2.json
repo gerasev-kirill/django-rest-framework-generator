@@ -1,0 +1,5 @@
+{
+    "name": "TestModel2",
+    "base": "django.db.models.Model",
+    "properties":{}
+}

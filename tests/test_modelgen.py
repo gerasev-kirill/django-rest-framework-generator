@@ -49,7 +49,7 @@ class Model(TestCase):
     def test_modelgen_field_invalid_type(self):
         self.assertRaisesMessage(
             ValueError,
-            "No such field type 'invalid_type'. Field declared in 'TestModel' model",
+            "No such field type 'invalid_type'. Field declared in 'TestModelInvalidFieldType' model",
             drfs.generate_model,
             'TestModelInvalidFieldType.json'
         )
@@ -82,3 +82,12 @@ class Model(TestCase):
             remote_field.model,
             UserModel
         )
+
+
+class Model2(TestCase):
+    def test_relations_has_one_drfs(self):
+        modelClass = drfs.generate_model('TestModel2.json')
+        modelClass = drfs.generate_model('ModelWithRefToTestModel.json')
+        opts = modelClass._meta
+        has_one_field = opts.get_field('has_one_field')
+        print has_one_field

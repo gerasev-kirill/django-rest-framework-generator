@@ -5,10 +5,6 @@ import json, os, errno
 from django.conf import settings
 
 
-class Cache:
-    pass
-
-models = Cache()
 
 def find_model_definition(name):
     path = None
@@ -29,14 +25,22 @@ def find_model_definition(name):
 
 
 def get_model(name, app=None):
+    from django.apps import apps
+    model = None
+    name = name.replace('.json','').lower()
     if app:
-        from django.apps import apps
-        return apps.get_model(app, name)
-    return generate_model(name+'.json')
+        model = apps.get_model(app, name)
+    else:
+        for m_name, m_models in apps.all_models.items():
+            if m_models.has_key(name):
+                model = m_models[name]
+                break
+    return model
+
 
 def generate_model(name):
     name = os.path.basename(name)
-    model = getattr(models, name, None)
+    model = get_model(name)
     if model:
         return model
 
@@ -53,26 +57,17 @@ def generate_model(name):
 
     name = definition.get('name', name)
     model_class = modelgen.ModelGenFactory(definition, module_name)
-    setattr(models, name, model_class)
     return model_class
 
 
 
 def generate_serializer(model_class, **kwargs):
     if isinstance(model_class, str):
-        model = getattr(models, model_class, None)
-        if model:
-            model_class = model
-        else:
-            model_class = generate_model(model_class)
+        model_class = generate_model(model_class)
     return SerializerGenFactory(model_class, **kwargs)
 
 
 def generate_viewset(model_class, **kwargs):
     if isinstance(model_class, str):
-        model = getattr(models, model_class, None)
-        if model:
-            model_class = model
-        else:
-            model_class = generate_model(model_class)
+        model_class = generate_model(model_class)
     return ViewsetGenFactory(model_class, **kwargs)

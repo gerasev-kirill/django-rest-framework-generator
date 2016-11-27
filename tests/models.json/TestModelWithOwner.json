@@ -1,5 +1,5 @@
 {
-    "name": "TestModel",
+    "name": "TestModelWithOwner",
     "base": "django.db.models.Model",
     "properties":{
         "datetime_field":{

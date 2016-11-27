@@ -90,7 +90,8 @@ class Fields(Base):
 
     def _string(self, field_params, **kwargs):
         field, kwargs = self._get_field_defaults(field_params)
-        kwargs['blank'] = True
+        if not field_params.get('required', False):
+            kwargs['blank'] = True
         for k,v in field_params.items():
             if k=='max':
                 kwargs['max_length'] = v
