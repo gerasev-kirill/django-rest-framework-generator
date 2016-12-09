@@ -74,6 +74,9 @@ class Fields(Base):
             kwargs['choices'] = fixChoices(params['choices'])
         if params.has_key('description'):
             kwargs['help_text'] = params['description']
+        if params.has_key('required') and params['required'] == False:
+            kwargs['blank'] = True
+            kwargs['null'] = True
 
         if FIELD_MAP.has_key(params['type']):
             return (FIELD_MAP[params['type']], kwargs)

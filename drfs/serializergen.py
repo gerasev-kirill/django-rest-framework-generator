@@ -108,18 +108,21 @@ class SerializerGenFactory(type):
                     def method(self, obj):
                         if name and not field_name:
                             obj = getattr(obj, name, None)
-                        elif field_name and '[' in field_name and obj:
-                            a = obj.drivers.all()
-                            obj = obj.__dict__
-                            1/0
-                            obj = [
-
-                            ]
+                        elif field_name and ',' in field_name and obj:
+                            obj = getattr(obj, name, None)
+                            if not obj:
+                                return {}
+                            nested_data = {}
+                            for n in field_name.split(','):
+                                o = getattr(obj, n, '--#NOVALUE#--')
+                                if o!='--#NOVALUE#--':
+                                    nested_data[n] = o
+                            return nested_data
                         elif field_name and field_name != 'self' and obj:
                             obj = getattr(obj, name, None)
                             obj = getattr(obj, field_name, None)
-                        elif '[' in field_name and not obj:
-                            return []
+                        elif ',' in field_name and not obj:
+                            return {}
                         return obj
                     return method
                 setattr(
