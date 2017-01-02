@@ -90,4 +90,3 @@ class Model2(TestCase):
         modelClass = drfs.generate_model('ModelWithRefToTestModel.json')
         opts = modelClass._meta
         has_one_field = opts.get_field('has_one_field')
-        print has_one_field

@@ -3,6 +3,16 @@ import os, math
 from django.conf import settings
 from PIL import Image
 from cStringIO import StringIO
+from django.core.files.images import ImageFile
+from django.core.files.storage import default_storage
+import uuid
+
+try:
+    from django_gcs.storage import GoogleCloudStorage
+    USE_GOOGLE_GLOUD = isinstance(default_storage, GoogleCloudStorage)
+except:
+    USE_GOOGLE_GLOUD = False
+
 
 DEFAULT_IMG_CONF = {
     "maxWidth": 2000,
@@ -47,16 +57,26 @@ def resize_and_crop_img(img, modified_path, size, quality=90):
         img = img.resize((size[0], size[1]),
                          Image.ANTIALIAS)
         # If the scale is the same, we do not need to crop
-    return img.save(modified_path, quality=quality)
+    if not USE_GOOGLE_GLOUD:
+        return img.save(modified_path, quality=quality)
+    img_buffer = StringIO()
+    img.save(img_buffer, quality=quality, format='JPEG')
+    default_storage._save(modified_path, ImageFile(img_buffer))
 
 
-def process_l10nFile(l10nFile, options={}, thumbSizeList=DEFAULT_IMG_CONF['thumbSizes']):
+
+def process_l10nFile(l10nFile, options={}):
+    """
+        google storage не позволит нам сохранять нормально названия файлов с unicode
+        поэтому заменяем названия на uuid1
+    """
+    file_name = os.path.splitext(l10nFile.file_data.name)
+    file_name = str(uuid.uuid1()) + file_name[1]
+    l10nFile.file_data.name = file_name
+
     if 'image' not in l10nFile.meta_data['type']:
         return
-    """
-        Ресайзит изображение к размерам ограничивающего прямоугольника.
-        Только для локальных файлов.
-    """
+
     if not options.has_key('maxWidth'):
         options['maxWidth'] = DEFAULT_IMG_CONF['maxWidth']
     if not options.has_key('maxHeight'):
@@ -65,6 +85,8 @@ def process_l10nFile(l10nFile, options={}, thumbSizeList=DEFAULT_IMG_CONF['thumb
         options['quality'] =  DEFAULT_IMG_CONF['quality']
     if not options.has_key('skipGif'):
         options['skipGif'] = DEFAULT_IMG_CONF['skipGif']
+    if not options.has_key('thumbSizes'):
+        options['thumbSizes'] = DEFAULT_IMG_CONF['thumbSizes']
 
 
     img = Image.open(l10nFile.file_data)
@@ -74,8 +96,9 @@ def process_l10nFile(l10nFile, options={}, thumbSizeList=DEFAULT_IMG_CONF['thumb
         'width': img_width,
         'height': img_height
     }
-
-    if not options['skipGif'] and ext!='.gif':
+    if options['skipGif'] and ext=='.gif':
+        pass
+    else:
         # ресайзим картинку в ограничивающие размеры
         # если картинка - не gif
         if img_width > options['maxWidth']:
@@ -83,11 +106,22 @@ def process_l10nFile(l10nFile, options={}, thumbSizeList=DEFAULT_IMG_CONF['thumb
         if img_height > options['maxHeight']:
             size['height'] = options['maxHeight']
 
-        image.thumbnail(
+        img.thumbnail(
             (size['width'], size['height']),
             Image.ANTIALIAS
         )
-        img.save(str(l10nFile.file_data), quality=options['quality'])
+        img_width, img_height = img.size
+        size = {
+            'width': img_width,
+            'height': img_height
+        }
+        if USE_GOOGLE_GLOUD:
+            img_buffer = StringIO()
+            img.save(img_buffer, quality=options['quality'], format=img.format)
+            l10nFile.file_data = ImageFile(img_buffer)
+            l10nFile.file_data.name = file_name
+        else:
+            img.save(str(l10nFile.file_data), quality=options['quality'])
 
     l10nFile.meta_data['width'] = size['width']
     l10nFile.meta_data['height'] = size['height']
@@ -101,6 +135,7 @@ def process_l10nFile(l10nFile, options={}, thumbSizeList=DEFAULT_IMG_CONF['thumb
         thumbSize    in    [  70, {width:90, height:120}, "200x130"  ]
     """
     tslist = []
+    thumbSizeList = options['thumbSizes']
     for thumbSize in thumbSizeList:
         if isinstance(thumbSize, int):
             # размер квадрата --  70 (в px)
@@ -108,7 +143,7 @@ def process_l10nFile(l10nFile, options={}, thumbSizeList=DEFAULT_IMG_CONF['thumb
                 'width': thumbSize,
                 'height': thumbSize
             }
-        elif isinstance(thumbSize, str):
+        elif isinstance(thumbSize, str) or isinstance(thumbSize, unicode):
             # размер прямоугольника -- "200x100" (в px)
             thumbSize = {
                 'width': int(thumbSize.split('x')[0]),
@@ -119,7 +154,9 @@ def process_l10nFile(l10nFile, options={}, thumbSizeList=DEFAULT_IMG_CONF['thumb
     thumbSizeList = tslist
     thumbNames = []
     localFilePath = str(l10nFile.file_data)
-    if not os.path.isabs(localFilePath):
+
+    # для локального сохранения нужен только полный путь
+    if not os.path.isabs(localFilePath) and not USE_GOOGLE_GLOUD:
         localFilePath = os.path.join(settings.MEDIA_ROOT, localFilePath)
 
     for thumbSize in thumbSizeList:
@@ -130,3 +167,18 @@ def process_l10nFile(l10nFile, options={}, thumbSizeList=DEFAULT_IMG_CONF['thumb
         resize_and_crop_img(thumb, filename, (thumbSize['width'], thumbSize['height']), quality=87)
 
     l10nFile.thumbs = thumbNames
+
+
+def delete_l10nFile(l10nFile):
+    path = str(l10nFile.file_data)
+    for thumb in l10nFile.thumbs or []:
+        filePath = path+".thumb."+thumb+".jpg"
+        if USE_GOOGLE_GLOUD:
+            default_storage.delete(filePath)
+        else:
+            if not os.path.isabs(filePath):
+                filePath = os.path.join(settings.MEDIA_ROOT, filePath)
+            try:
+                os.remove(filePath)
+            except:
+                pass

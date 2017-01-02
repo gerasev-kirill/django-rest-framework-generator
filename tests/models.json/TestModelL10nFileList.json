@@ -1,0 +1,17 @@
+{
+    "name": "TestModelL10nFileList",
+    "base": "django.db.models.Model",
+    "properties":{},
+    "relations":{
+        "files":{
+            "type": "embedsMany",
+            "model": "drfs.models.L10nFile"
+        }
+    },
+    "viewset": {
+        "base": [
+            "drfs.mixins.L10nFileListMixin",
+            "rest_framework.viewsets.ModelViewSet"
+        ]
+    }
+}

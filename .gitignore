@@ -5,4 +5,5 @@ dist
 ap2
 *.sqlite3
 .*
+/key.json
 !.gitignore

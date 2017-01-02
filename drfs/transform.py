@@ -125,6 +125,19 @@ class Fields(Base):
 
 
 REGISTERED_RECEIVERS = {}
+@receiver(models.signals.pre_delete)
+def on_delete(sender, instance, **kwargs):
+    _meta = getattr(sender, '_meta', {})
+    model_name = getattr(_meta, 'object_name', None)
+    if model_name not in REGISTERED_RECEIVERS.keys():
+        return
+    fields = REGISTERED_RECEIVERS[model_name].get('delete_embedsMany', {})
+    for fname, embedded_model_class in fields.items():
+        ids = getattr(instance, fname, [])
+        if ids:
+            embedded_model_class.objects.filter(id__in=ids).delete()
+
+
 
 def register_on_delete_embedsMany(model_class, fields):
     model_name = model_class._meta.object_name
@@ -133,14 +146,7 @@ def register_on_delete_embedsMany(model_class, fields):
             return
     else:
         REGISTERED_RECEIVERS[model_name] = {}
-    REGISTERED_RECEIVERS[model_name]['delete_embedsMany'] = True
-
-    @receiver(models.signals.pre_delete, sender=model_class)
-    def on_delete(sender, instance, **kwargs):
-        for fname, embedded_model_class in fields.items():
-            ids = getattr(instance, fname, [])
-            if ids:
-                embedded_model_class.objects.filter(id__in=ids).delete()
+    REGISTERED_RECEIVERS[model_name]['delete_embedsMany'] = fields
 
 
 
@@ -148,7 +154,7 @@ class Relations(Base):
     def __init__(self, relations, model_class=None):
         self.data = relations
         self.model_class = model_class
-        self.receivers = {'embedsMany':[]}
+        self.receivers = {'embedsMany':{}}
 
     def _get_relation_defaults(self, params, **kwargs):
         kwargs = {"blank":True, "null":True}
@@ -191,9 +197,7 @@ class Relations(Base):
 
     def _embedsMany(self, relation_params, field_name=None):
         model = self._get_model_class(relation_params['model'])
-        data = {}
-        data[field_name] = model
-        self.receivers['embedsMany'].append(data)
+        self.receivers['embedsMany'][field_name] = model
         return FIELD_MAP['array'](default=[])
 
     def register_receivers(self, model_class):

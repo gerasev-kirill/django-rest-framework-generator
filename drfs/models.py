@@ -19,21 +19,16 @@ class L10nFile(models.Model):
     def delete_file_data(self):
         if not self.file_data:
             return
-        path = str(self.file_data)
-        for thumb in self.thumbs or []:
-            localFilePath = path+".thumb."+thumb+".jpg"
-            if not os.path.isabs(localFilePath):
-                localFilePath = os.path.join(settings.MEDIA_ROOT, localFilePath)
-            try:
-                os.remove(localFilePath)
-            except:
-                pass
+        helpers.delete_l10nFile(self)
         self.file_data.delete(save=False)
 
     def save(self, *args, **kwargs):
+        options = kwargs.get('options', {})
+        if kwargs.has_key('options'):
+            del kwargs['options']
+
         if self.file_data and not kwargs.get('ignore_processing', False):
-            self.file_data.save(self.file_data.name, self.file_data, save=False)
-            helpers.process_l10nFile(self)
+            helpers.process_l10nFile(self, options=options)
             super(L10nFile, self).save(*args, **kwargs)
         else:
             if kwargs.has_key('ignore_processing'):

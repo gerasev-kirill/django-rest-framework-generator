@@ -87,6 +87,17 @@ class SerializerGenFactory(type):
                 return ser.data
             return get_data
 
+        def generate_has_one_serializer(child_model_class, _field_name):
+            child_ser = SerializerGenFactory(child_model_class)
+            def get_data(self, obj):
+                child = getattr(obj, _field_name, None)
+                if not child:
+                    return None
+                ser = child_ser(child)
+                return ser.data
+            return get_data
+
+
         for name, params in modelgen_fields.items():
             if params['type'] == 'embedsMany':
                 child_model_class = helpers.import_class(params['model'])
@@ -94,6 +105,15 @@ class SerializerGenFactory(type):
                     SerializerMeta,
                     'get_'+name,
                     generate_embeds_many_serializer(child_model_class, name)
+                )
+                data['serializers'][name] = serializers.SerializerMethodField()
+                continue
+            if params['type'] == 'hasOne':
+                child_model_class = helpers.import_class(params['model'])
+                setattr(
+                    SerializerMeta,
+                    'get_'+name,
+                    generate_has_one_serializer(child_model_class, name)
                 )
                 data['serializers'][name] = serializers.SerializerMethodField()
                 continue

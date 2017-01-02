@@ -2,3 +2,4 @@ from .CountModelMixin import CountModelMixin
 from .UserRegisterLoginLogoutMixin import UserRegisterLoginLogoutMixin
 from .QuerysetExistsModelMixin import QuerysetExistsModelMixin
 from .L10nFileListMixin import L10nFileListMixin
+from .L10nFileMixin import L10nFileMixin

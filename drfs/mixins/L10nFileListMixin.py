@@ -2,8 +2,7 @@
 from rest_framework.response import Response
 from rest_framework.decorators import list_route, detail_route
 from rest_framework import exceptions
-from django.core.files.uploadedfile import InMemoryUploadedFile
-
+from .l10nHelpers import get_options_from_request_data
 
 
 
@@ -12,7 +11,7 @@ from django.core.files.uploadedfile import InMemoryUploadedFile
 class L10nFileListMixin(object):
     l10nfile_list_allowed_fields = ('files',)
 
-    def check_upload_field_exists(self, forModelField):
+    def check_upload_l10nfile_list_field_exists(self, forModelField):
         queryset = self.get_queryset()
         modelClass = queryset.model
         exist = False
@@ -25,15 +24,8 @@ class L10nFileListMixin(object):
             raise exceptions.NotAcceptable(detail="Unknown L10nFile field \""+forModelField+"\" for model \""+modelClass._meta.object_name+"\".")
         return True
 
-    def get_l10nfile_id_from_options(self, data):
-        forIdInList = data.get('options_forIdInList', -1)
-        try:
-            forIdInList = int(forIdInList)
-        except:
-            pass
-        return forIdInList
 
-    def get_l10nfile_data(self, objects=None, pks=None):
+    def get_l10nfile_list_data(self, objects=None, pks=None):
         from ..models import L10nFile
         from ..serializers.models import L10nFile as L10nFileSerializer
         if pks:
@@ -45,16 +37,12 @@ class L10nFileListMixin(object):
     def upload_file_to_list(self, request, *args, **kwargs):
         from ..models import L10nFile
         forModelField = kwargs.get('forModelField', None)
-        forIdInList = self.get_l10nfile_id_from_options(request.data)
-        self.check_upload_field_exists(forModelField)
+        self.check_upload_l10nfile_list_field_exists(forModelField)
         instance = self.get_object()
         fileList = getattr(instance, forModelField)
-        ffile = None
+        options, ffile = get_options_from_request_data(request.data)
+        forIdInList = options.get('forIdInList', -1)
 
-        for k in request.data.keys():
-            if isinstance(request.data[k], InMemoryUploadedFile):
-                ffile = request.data[k]
-                break
 
         if not ffile:
             raise exceptions.NotAcceptable(detail="Can't find field with file in formdata.")
@@ -65,7 +53,8 @@ class L10nFileListMixin(object):
             'type': ffile.content_type
         }
         if forIdInList < 0 or forIdInList not in fileList:
-            l10nFile = L10nFile.objects.create(file_data=ffile, meta_data=meta)
+            l10nFile = L10nFile(file_data=ffile, meta_data=meta)
+            l10nFile.save(options=options)
             fileList.append(l10nFile.id)
             setattr(instance, forModelField, fileList)
             instance.save()
@@ -74,9 +63,9 @@ class L10nFileListMixin(object):
             l10nFile.delete_file_data()
             l10nFile.file_data = ffile
             l10nFile.meta_data = meta
-            l10nFile.save()
+            l10nFile.save(options=options)
 
-        return Response(self.get_l10nfile_data(pks=fileList))
+        return Response(self.get_l10nfile_list_data(pks=fileList))
 
 
 
@@ -84,7 +73,7 @@ class L10nFileListMixin(object):
     def update_files_inside_list(self, request, *args, **kwargs):
         from ..models import L10nFile
         forModelField = kwargs.get('forModelField', None)
-        self.check_upload_field_exists(forModelField)
+        self.check_upload_l10nfile_list_field_exists(forModelField)
         instance = self.get_object()
         fileList = getattr(instance, forModelField)
 
@@ -108,14 +97,14 @@ class L10nFileListMixin(object):
         for l10nFile in objects:
             update_l10nfile(l10nFile)
 
-        return Response(self.get_l10nfile_data(objects=objects))
+        return Response(self.get_l10nfile_list_data(objects=objects))
 
 
     @detail_route(url_path="fileList/(?P<forModelField>[^/.]+)/delete", methods=['patch'])
     def delete_files_inside_list(self, request, *args, **kwargs):
         from ..models import L10nFile
         forModelField = kwargs.get('forModelField', None)
-        self.check_upload_field_exists(forModelField)
+        self.check_upload_l10nfile_list_field_exists(forModelField)
         instance = self.get_object()
         fileList = getattr(instance, forModelField)
 
@@ -129,4 +118,4 @@ class L10nFileListMixin(object):
         setattr(instance, forModelField, fileList)
         instance.save()
 
-        return Response(self.get_l10nfile_data(pks=fileList))
+        return Response(self.get_l10nfile_list_data(pks=fileList))
