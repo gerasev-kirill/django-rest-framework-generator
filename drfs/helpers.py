@@ -14,7 +14,7 @@ except:
     USE_GOOGLE_GLOUD = False
 
 
-DEFAULT_IMG_CONF = {
+DEFAULT_IMG_CONF = getattr(settings, 'DRFS_L10NFILE_IMG_CONF', None) or {
     "maxWidth": 2000,
     "maxHeight": 2000,
     "quality": 70,
