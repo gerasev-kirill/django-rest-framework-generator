@@ -20,7 +20,8 @@ class ProcessLimitSkipFilter:
             raise exceptions.NotAcceptable("Parameter for 'limit' filter should be greater than zero")
 
         if skip is not None and limit is not None:
-            self.queryset = queryset[skip:limit]
+            self.queryset = queryset[skip:]
+            self.queryset = self.queryset[:limit]
         elif skip is not None:
             self.queryset = queryset[skip:]
         elif limit is not None:
