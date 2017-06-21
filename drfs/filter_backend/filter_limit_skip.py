@@ -14,10 +14,12 @@ class ProcessLimitSkipFilter:
         self.validate_value('limit', limit)
         self.validate_value('skip', skip)
 
-        if skip > limit:
-            raise exceptions.NotAcceptable("Parameter for 'limit' filter should be greater than 'skip' or equal")
         if limit == 0:
-            raise exceptions.NotAcceptable("Parameter for 'limit' filter should be greater than zero")
+            raise exceptions.NotAcceptable(
+                "Parameter for 'limit' filter should be greater than zero")
+
+        if skip and queryset.count() < skip:
+            return queryset.empty()
 
         if skip is not None and limit is not None:
             self.queryset = queryset[skip:]
