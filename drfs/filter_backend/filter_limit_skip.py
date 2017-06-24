@@ -19,7 +19,7 @@ class ProcessLimitSkipFilter:
                 "Parameter for 'limit' filter should be greater than zero")
 
         if skip and queryset.count() < skip:
-            return queryset.empty()
+            return queryset.none()
 
         if skip is not None and limit is not None:
             self.queryset = queryset[skip:]
