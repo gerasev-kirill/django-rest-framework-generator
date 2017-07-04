@@ -40,7 +40,7 @@ except ImportError:
     from django.test.runner import DiscoverRunner
     test_runner = DiscoverRunner(verbosity=1)
 
-failures = test_runner.run_tests(['tests.test_l10nfile_list'])
-#failures = test_runner.run_tests(['tests'])
+#failures = test_runner.run_tests(['tests.test_l10nfile_list'])
+failures = test_runner.run_tests(['tests'])
 if failures:
     sys.exit(failures)

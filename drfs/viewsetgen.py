@@ -12,8 +12,8 @@ REST_FRAMEWORK = getattr(settings, 'REST_FRAMEWORK', {})
 
 
 def getViewsetParams(model_class, kwargs):
-    MODEL_GEN = getattr(model_class, 'MODEL_GEN', {})
-    viewsetPref = MODEL_GEN.get('viewset', {})
+    DRFS_MODEL_DEFINITION = getattr(model_class, 'DRFS_MODEL_DEFINITION', {})
+    viewsetPref = DRFS_MODEL_DEFINITION.get('viewset', {})
     if REST_FRAMEWORK.get('DEFAULT_FILTER_BACKENDS', None):
         filter_backends = [
             helpers.import_class(m)
@@ -44,8 +44,8 @@ def getViewsetParams(model_class, kwargs):
     elif viewsetPref.has_key('filter_fields'):
         filter_fields = viewsetPref['filter_fields']
     else:
-        items = MODEL_GEN.get('properties', {}).items()
-        items += MODEL_GEN.get('relations',{}).items()
+        items = DRFS_MODEL_DEFINITION.get('properties', {}).items()
+        items += DRFS_MODEL_DEFINITION.get('relations',{}).items()
         filter_fields = [
             str(k)   for k,v in items
         ]
@@ -62,8 +62,8 @@ def getViewsetParams(model_class, kwargs):
 
 class ViewsetGenFactory(type):
     def __new__(self, model_class, **kwargs):
-        MODEL_GEN = getattr(model_class, 'MODEL_GEN', {})
-        viewsetPref = MODEL_GEN.get('viewset', {})
+        DRFS_MODEL_DEFINITION = getattr(model_class, 'DRFS_MODEL_DEFINITION', {})
+        viewsetPref = DRFS_MODEL_DEFINITION.get('viewset', {})
 
         if 'mixins' in kwargs.keys():
             mixins = kwargs['mixins']
@@ -87,14 +87,14 @@ class ViewsetGenFactory(type):
             ]
         classes = mixins + classes
 
-        model_name = MODEL_GEN.get(
+        model_name = DRFS_MODEL_DEFINITION.get(
             'name',
             model_class.__name__
         )
         name = str(model_name+'_ViewSet')
         params = getViewsetParams(model_class, kwargs)
         if not kwargs.get('acl', None):
-            model_acl = MODEL_GEN.get('acl', [])
+            model_acl = DRFS_MODEL_DEFINITION.get('acl', [])
         else:
             model_acl = kwargs.get('acl')
         new_cls = type(name, tuple(classes), params)

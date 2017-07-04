@@ -14,7 +14,7 @@ class SerializerGenFactory(type):
             return L10nFileSerializerClass
 
         _fields = model_class._meta.get_fields()
-        definition = getattr(model_class, 'MODEL_GEN', {})
+        definition = getattr(model_class, 'DRFS_MODEL_DEFINITION', {})
 
 
         model_name = str(definition.get('name', None))

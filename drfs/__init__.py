@@ -1,9 +1,10 @@
-from . import modelgen, mixins
+from . import mixins
 from .serializergen import SerializerGenFactory
 from .viewsetgen import ViewsetGenFactory
 import json, os, errno
 from django.conf import settings
 
+from generators.model import DjangoOrmModelGenerator
 
 
 def find_model_definition(name):
@@ -56,8 +57,8 @@ def generate_model(name):
         definition = json.load(f)
 
     name = definition.get('name', name)
-    model_class = modelgen.ModelGenFactory(definition, module_name)
-    return model_class
+    converter = DjangoOrmModelGenerator(definition, module_name)
+    return converter.to_django_model()
 
 
 
