@@ -29,7 +29,7 @@ class Model(TestCase):
         opts = modelClass._meta
 
         for field in opts.get_fields():
-            if field.name == 'id':
+            if field.name in ['id', 'testmodelwithrelations_flat', 'testmodelwithrelations_nested']:
                 continue
             test_field(
                 field,

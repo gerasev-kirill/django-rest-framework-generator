@@ -1,0 +1,29 @@
+{
+    "name": "TestModelWithRelations_Nested",
+    "base": "django.db.models.Model",
+    "relations":{
+        "belongs_to_field":{
+            "type": "belongsTo",
+            "model": "django.contrib.auth.models.User",
+            "on_delete": "CASCADE",
+            "_serializer": {
+                "visible_fields": ["id", "username", "email"],
+                "ignore_object_doesnt_exist": true
+            }
+        },
+        "has_one":{
+            "type": "hasOne",
+            "model": "TestModel",
+            "_serializer":{
+                "visible_fields": ["id", "string_field"]
+            }
+        },
+        "has_many":{
+            "type": "hasMany",
+            "model": "TestModel",
+            "_serializer":{
+                "visible_fields": ["id", "string_field", "int_field"]
+            }
+        }
+    }
+}

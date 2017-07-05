@@ -1,15 +1,7 @@
 from ... import helpers
+from ..field_definition import DjangoFieldDefinition
 
 
-
-
-
-class DjangoFieldDefinition:
-    field_class = None
-    args = []
-    kwargs = {}
-    def __init__(self, **kwargs):
-        self.kwargs = kwargs
 
 
 

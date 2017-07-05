@@ -5,7 +5,7 @@ from django.conf import settings as django_settings
 from django.dispatch import receiver
 from jsonfield import JSONField
 
-from _BaseModelGenerator import BaseModelGenerator, DjangoFieldDefinition
+from _BaseModelGenerator import BaseModelGenerator
 from ... import helpers
 from ...db import fields as drfs_fields
 

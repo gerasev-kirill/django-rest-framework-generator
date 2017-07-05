@@ -1,0 +1,22 @@
+{
+    "name": "TestModelWithRelations_Flat",
+    "base": "django.db.models.Model",
+    "relations":{
+        "belongs_to_field":{
+            "type": "belongsTo",
+            "model": "django.contrib.auth.models.User",
+            "on_delete": "CASCADE",
+            "_serializer": {
+                "ignore_object_doesnt_exist": true
+            }
+        },
+        "has_one":{
+            "type": "hasOne",
+            "model": "TestModel"
+        },
+        "has_many":{
+            "type": "hasMany",
+            "model": "TestModel"
+        }
+    }
+}

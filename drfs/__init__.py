@@ -65,7 +65,10 @@ def generate_model(name):
 def generate_serializer(model_class, **kwargs):
     if isinstance(model_class, str):
         model_class = generate_model(model_class)
-    return SerializerGenFactory(model_class, **kwargs)
+    #return SerializerGenFactory(model_class, **kwargs)
+    from generators.serializer import DjangoRestSerializerGenerator
+    generator = DjangoRestSerializerGenerator(model_class, **kwargs)
+    return generator.to_serializer()
 
 
 def generate_viewset(model_class, **kwargs):
