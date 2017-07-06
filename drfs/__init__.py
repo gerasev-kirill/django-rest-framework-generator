@@ -1,5 +1,4 @@
 from . import mixins
-from .serializergen import SerializerGenFactory
 from .viewsetgen import ViewsetGenFactory
 import json, os, errno
 from django.conf import settings
@@ -62,13 +61,21 @@ def generate_model(name):
 
 
 
+
 def generate_serializer(model_class, **kwargs):
+    from .models import L10nFile as L10nFileModelClass
+    from .serializers.models import L10nFile as L10nFileSerializerClass
+    if model_class == L10nFileModelClass:
+        return L10nFileSerializerClass
+
     if isinstance(model_class, str):
         model_class = generate_model(model_class)
-    #return SerializerGenFactory(model_class, **kwargs)
+
     from generators.serializer import DjangoRestSerializerGenerator
     generator = DjangoRestSerializerGenerator(model_class, **kwargs)
     return generator.to_serializer()
+
+
 
 
 def generate_viewset(model_class, **kwargs):

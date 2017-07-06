@@ -42,8 +42,11 @@ def fix_choices(choices):
 
 
 
+
+
+
 class DjangoOrmModelGenerator(BaseModelGenerator):
-    default_fields_map = {
+    model_fields_mapping = {
         'string': django_fields.CharField,
         'int': django_fields.IntegerField,
         'object': JSONField,
@@ -58,117 +61,114 @@ class DjangoOrmModelGenerator(BaseModelGenerator):
         'embedsMany': drfs_fields.ListField
     }
 
-
-    def field_definition_to_django(self, field_name, field_params):
-        field = super(DjangoOrmModelGenerator, self).field_definition_to_django(field_name, field_params)
-
-        if field_params.has_key('default'):
-            field.kwargs['default'] = field_params['default']
-        if field_params.has_key('choices'):
-            field.kwargs['choices'] = fix_choices(field_params['choices'])
-        if field_params.has_key('description'):
-            field.kwargs['help_text'] = field_params['description']
-        if field_params.has_key('required') and field_params['required'] == False:
-            field.kwargs['blank'] = True
-            field.kwargs['null'] = True
-
-        return field
-
-    def _get_model_class(self, model_path):
-        if model_path=='django.contrib.auth.models.User' or model_path=='AUTH_USER_MODEL':
+    def get_model_class(self, model_path):
+        if model_path in ['django.contrib.auth.models.User', 'AUTH_USER_MODEL']:
             if getattr(django_settings, 'AUTH_USER_MODEL', False):
                 return django_settings.AUTH_USER_MODEL
-        if '.' not in model_path:
-            return model_path
-        return helpers.import_class(model_path)
+        return super(DjangoOrmModelGenerator, self).get_model_class(model_path)
+
+
+    def build_field(self, name, params):
+        field_class, field_args, field_kwargs = super(DjangoOrmModelGenerator, self).build_field(name, params)
+
+        if params.has_key('default'):
+            field_kwargs['default'] = params['default']
+        if params.has_key('choices'):
+            field_kwargs['choices'] = fix_choices(params['choices'])
+        if params.has_key('description'):
+            field_kwargs['help_text'] = params['description']
+        if params.has_key('required') and params['required'] == False:
+            field_kwargs['blank'] = True
+            field_kwargs['null'] = True
+
+        return field_class, field_args, field_kwargs
 
 
 
 
+    def build_field__string(self, name, params):
+        field_class, field_args, field_kwargs = self.build_field(name, params)
 
-    def string_field_definition_to_django(self, field_name, field_params):
-        field = self.field_definition_to_django(field_name, field_params)
-
-        if not field_params.get('required', False):
-            field.kwargs['blank'] = True
-        for k,v in field_params.items():
+        if not params.get('required', False):
+            field_kwargs['blank'] = True
+        for k,v in params.items():
             if k=='max':
-                field.kwargs['max_length'] = int(v)
-        return field
+                field_kwargs['max_length'] = int(v)
+        return field_class, field_args, field_kwargs
 
 
-    def datetime_field_definition_to_django(self, field_name, field_params):
-        field = self.field_definition_to_django(field_name, field_params)
+    def build_field__datetime(self, name, params):
+        field_class, field_args, field_kwargs = self.build_field(name, params)
 
-        for k,v in field_params.items():
+        for k,v in params.items():
             if k=='auto_now_add':
-                field.kwargs['auto_now_add'] = v
-        return field
+                field_kwargs['auto_now_add'] = v
+        return field_class, field_args, field_kwargs
 
 
-    def int_field_definition_to_django(self, field_name, field_params):
-        field = self.field_definition_to_django(field_name, field_params)
+    def build_field__int(self, name, params):
+        field_class, field_args, field_kwargs = self.build_field(name, params)
 
-        if not field_params.get('required', True):
-            field.kwargs['blank'] = True
-            field.kwargs['null'] = True
-        return field
+        if not params.get('required', True):
+            field_kwargs['blank'] = True
+            field_kwargs['null'] = True
+        return field_class, field_args, field_kwargs
 
 
-    def belongsTo_field_definition_to_django(self, field_name, field_params):
-        field = self.field_definition_to_django(field_name, field_params)
-        if not field.kwargs.has_key('blank'):
-            field.kwargs['blank'] = True
-        if not field.kwargs.has_key('null'):
-            field.kwargs['null'] = True
+    def build_field__belongsTo(self, name, params):
+        field_class, field_args, field_kwargs = self.build_field(name, params)
+        if not field_kwargs.has_key('blank'):
+            field_kwargs['blank'] = True
+        if not field_kwargs.has_key('null'):
+            field_kwargs['null'] = True
 
-        to_model = self._get_model_class(field_params['model'])
-        field.args = (to_model,)
+        to_model = self.get_model_class(params['model'])
+        field_args = (to_model,)
 
-        for k,v in field_params.items():
+        for k,v in params.items():
             if k=='on_delete':
-                field.kwargs['on_delete'] = getattr(django_models, v)
-        return field
+                field_kwargs['on_delete'] = getattr(django_models, v)
+        return field_class, field_args, field_kwargs
 
 
-    def hasOne_field_definition_to_django(self, field_name, field_params):
-        field = self.field_definition_to_django(field_name, field_params)
-        if not field.kwargs.has_key('blank'):
-            field.kwargs['blank'] = True
-        if not field.kwargs.has_key('null'):
-            field.kwargs['null'] = True
+    def build_field__hasOne(self, name, params):
+        field_class, field_args, field_kwargs = self.build_field(name, params)
+        if not field_kwargs.has_key('blank'):
+            field_kwargs['blank'] = True
+        if not field_kwargs.has_key('null'):
+            field_kwargs['null'] = True
 
-        to_model = self._get_model_class(field_params['model'])
-        field.args = (to_model,)
+        to_model = self.get_model_class(params['model'])
+        field_args = (to_model,)
 
-        for k,v in field_params.items():
+        for k,v in params.items():
             if k=='on_delete':
-                field.kwargs['on_delete'] = getattr(django_models, v)
-        return field
+                field_kwargs['on_delete'] = getattr(django_models, v)
+        return field_class, field_args, field_kwargs
 
 
-    def hasMany_field_definition_to_django(self, field_name, field_params):
-        field = self.field_definition_to_django(field_name, field_params)
-        if not field.kwargs.has_key('blank'):
-            field.kwargs['blank'] = True
-        if field.kwargs.has_key('null'):
-            del field.kwargs['null']
+    def build_field__hasMany(self, name, params):
+        field_class, field_args, field_kwargs = self.build_field(name, params)
+        if not field_kwargs.has_key('blank'):
+            field_kwargs['blank'] = True
+        if field_kwargs.has_key('null'):
+            del field_kwargs['null']
 
-        to_model = self._get_model_class(field_params['model'])
-        field.args = (to_model,)
+        to_model = self.get_model_class(params['model'])
+        field_args = (to_model,)
 
-        return field
+        return field_class, field_args, field_kwargs
 
 
-    def embedsMany_field_definition_to_django(self, field_name, field_params):
-        field = self.field_definition_to_django(field_name, field_params)
-        if not field.kwargs.has_key('default'):
-            field.kwargs['default'] = []
+    def build_field__embedsMany(self, name, params):
+        field_class, field_args, field_kwargs = self.build_field(name, params)
+        if not field_kwargs.has_key('default'):
+            field_kwargs['default'] = []
 
-        to_model = self._get_model_class(field_params['model'])
+        to_model = self.get_model_class(params['model'])
         REGISTERED_RECEIVERS[self.model_name] = REGISTERED_RECEIVERS.get(self.model_name, {})
         REGISTERED_RECEIVERS[self.model_name]['delete_embedsMany'] = \
             REGISTERED_RECEIVERS[self.model_name].get('delete_embedsMany', {})
 
-        REGISTERED_RECEIVERS[self.model_name]['delete_embedsMany'][field_name] = to_model
-        return field
+        REGISTERED_RECEIVERS[self.model_name]['delete_embedsMany'][name] = to_model
+        return field_class, field_args, field_kwargs

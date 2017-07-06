@@ -5,7 +5,6 @@ from django.conf import settings as django_settings
 from django.db.models.fields.reverse_related import ManyToManyRel
 
 from ._BaseSerializerGenerator import BaseSerializerGenerator
-from ..field_definition import DjangoFieldDefinition
 
 from ...serializers import fields as drfs_field_serializers
 from ...db import fields as drfs_fields
@@ -35,45 +34,51 @@ class DjangoRestSerializerGenerator(BaseSerializerGenerator):
     default_serializer_class = rest_serializers.ModelSerializer
     model_relation_types = ['belongsTo', 'hasOne', 'hasMany', 'embedsMany']
 
+
     def get_model_class(self, model_path):
         if model_path=='django.contrib.auth.models.User' or model_path=='AUTH_USER_MODEL':
             return helpers.import_class(django_settings.AUTH_USER_MODEL)
         return super(DjangoRestSerializerGenerator, self).get_model_class(model_path)
 
 
-    def django_relation_field_to_rest_serializer(self, django_field, field_params):
-        serializer_params = field_params.get('_serializer', None)
-        serializer = DjangoFieldDefinition(
-            help_text=getattr(django_field, 'help_text', '')
-        )
-        if not serializer_params or field_params.get('type', None) not in self.model_relation_types:
-            return serializer
-        kwargs = {
-            'visible_fields': serializer_params.get('visible_fields', []),
-            'hidden_fields': serializer_params.get('hidden_fields', [])
+    def build_relational_serializer(self, django_field, params):
+        _params = params.get('_serializer', None)
+        if not _params or params.get('type', None) not in self.model_relation_types:
+            return None, [], {}
+
+        serializer_class = None
+        serializer_args = []
+        serializer_kwargs = {
+            'help_text': getattr(django_field, 'help_text', '')
         }
-        if kwargs['visible_fields'] or kwargs['hidden_fields']:
+
+        generator_kwargs = {
+            'visible_fields': _params.get('visible_fields', []),
+            'hidden_fields': _params.get('hidden_fields', [])
+        }
+        if generator_kwargs['visible_fields'] or generator_kwargs['hidden_fields']:
             model_class = getattr(django_field, 'related_model', None)
             if not model_class:
-                if not field_params.get('model', None):
+                if not params.get('model', None):
                     raise ValueError("Expected 'model' property for relation field '"+\
                         django_field.name+"' in model definition '"+self.model_name+"'")
-                model_class = self.get_model_class(field_params['model'])
+                model_class = self.get_model_class(params['model'])
 
             remote_field = getattr(django_field, 'remote_field', None)
-            generator = self.__class__(model_class, **kwargs)
-            serializer.field_class = generator.to_serializer()
-            serializer.kwargs['many'] = isinstance(remote_field, ManyToManyRel)
+            generator = self.__class__(model_class, **generator_kwargs)
+            serializer_class = generator.to_serializer()
+            serializer_kwargs['many'] = isinstance(remote_field, ManyToManyRel)
 
-        return serializer
+        return serializer_class, serializer_args, serializer_kwargs
+
 
     def to_serializer(self):
-        serializer_class = super(DjangoRestSerializerGenerator, self).to_serializer()
+        _cls = super(DjangoRestSerializerGenerator, self).to_serializer()
         relations = self.model_definition.get('relations', {})
 
-        def build_relational_field(sself, field_name, relation_info):
+        def build_relational_field(_self, field_name, relation_info):
             field_params = relations.get(field_name, {})
-            field_class, field_kwargs = super(serializer_class, sself).build_relational_field(
+            field_class, field_kwargs = super(_cls, _self).build_relational_field(
                 field_name,
                 relation_info
             )
@@ -82,5 +87,5 @@ class DjangoRestSerializerGenerator(BaseSerializerGenerator):
                 return SoftPrimaryKeyRelatedField, field_kwargs
             return field_class, field_kwargs
 
-        setattr(serializer_class, 'build_relational_field', build_relational_field)
-        return serializer_class
+        setattr(_cls, 'build_relational_field', build_relational_field)
+        return _cls

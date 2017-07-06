@@ -1,5 +1,4 @@
 
-from ..field_definition import DjangoFieldDefinition
 from ...models import L10nFile as L10nFileModelClass
 from ...serializers.models import L10nFile as L10nFileSerializerClass
 from ... import helpers
@@ -53,6 +52,7 @@ class BaseSerializerGenerator(object):
                 if field_params.get('hidden', False) and field_name in all_fields:
                     self.allowed_fields.remove(field_name)
 
+
     def get_model_class(self, model_path):
         if '.' in model_path and '.json' not in model_path:
             return helpers.import_class(model_path)
@@ -62,25 +62,25 @@ class BaseSerializerGenerator(object):
         return generate_model(model_path)
 
 
-    def django_relation_field_to_rest_serializer(self, django_field, field_params):
-        serializer = DjangoFieldDefinition(
-            help_text=getattr(django_field, 'help_text', '')
-        )
-        return serializer
+    def build_relational_serializer(self, django_field, params):
+        return None, [], {'help_text': getattr(django_field, 'help_text', '')}
 
-    def django_field_to_rest_serializer(self, django_field, field_params):
-        serializer = DjangoFieldDefinition(
-            help_text=getattr(django_field, 'help_text', '')
-        )
-        field_params = field_params or {}
+
+    def build_serializer(self, django_field, params=None):
+        serializer_class = None
+        serializer_args = []
+        serializer_kwargs = {
+            'help_text': getattr(django_field, 'help_text', '')
+        }
+        params = params or {}
 
         for k,v in self.serializer_field_mapping.items():
             if isinstance(django_field, k):
-                serializer.field_class = v
+                serializer_class = v
 
-        if not serializer.field_class and field_params.get('type', None) in self.model_relation_types:
-            return self.django_relation_field_to_rest_serializer(django_field, field_params)
-        return serializer
+        if not serializer_class and params.get('type', None) in self.model_relation_types:
+            return self.build_relational_serializer(django_field, params)
+        return serializer_class, serializer_args, serializer_kwargs
 
 
     def to_serializer(self):
@@ -95,18 +95,14 @@ class BaseSerializerGenerator(object):
         for field in self.model_fields:
             if field.name not in self.allowed_fields:
                 continue
-            #if field.related_model:
-            #    print '=============='
-            #    print field.__dict__
-            #    print ''
             field_params = self.model_definition.get('properties', {}).get(field.name, None) or \
                 self.model_definition.get('relations', {}).get(field.name, None)
 
-            serializer = self.django_field_to_rest_serializer(field, field_params)
-            if serializer.field_class:
-                fields_serializers[field.name] = serializer.field_class(
-                    *serializer.args,
-                    **serializer.kwargs
+            serializer_class, serializer_args, serializer_kwargs = self.build_serializer(field, field_params)
+            if serializer_class:
+                fields_serializers[field.name] = serializer_class(
+                    *serializer_args,
+                    **serializer_kwargs
                 )
             if modeldef_fields.get(field.name, {}).get('_serializer', {}).get('read_only', False):
                 read_only_fields.append(field.name)
@@ -153,6 +149,6 @@ class BaseSerializerGenerator(object):
             base_class = [self.default_serializer_class]
         base_class.append(DRFS_Serializer)
 
-        serializer_class = type(self.model_name, tuple(base_class), fields_serializers)
-        setattr(serializer_class, 'DRFS_MODEL_DEFINITION', self.model_definition)
-        return serializer_class
+        _cls = type(self.model_name, tuple(base_class), fields_serializers)
+        setattr(_cls, 'DRFS_MODEL_DEFINITION', self.model_definition)
+        return _cls

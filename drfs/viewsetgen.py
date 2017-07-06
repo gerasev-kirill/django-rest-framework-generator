@@ -4,7 +4,6 @@ from django.conf import settings
 
 from . import helpers, decorators
 from .permissions.drf import Everyone as AllowEveryone
-from .serializergen import SerializerGenFactory
 
 REST_FRAMEWORK = getattr(settings, 'REST_FRAMEWORK', {})
 
@@ -30,7 +29,8 @@ def getViewsetParams(model_class, kwargs):
     if 'serializer_class' in kwargs.keys():
         serializer_class = kwargs['serializer_class']
     else:
-        serializer_class = SerializerGenFactory(model_class)
+        from . import generate_serializer
+        serializer_class = generate_serializer(model_class)
     if 'filter_backends' in kwargs.keys():
         filter_backends = kwargs['filter_backends']
     elif viewsetPref.has_key('filter_backends'):

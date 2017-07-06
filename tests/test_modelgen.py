@@ -2,7 +2,9 @@ from django.test import TestCase
 from django.contrib.auth.models import User as UserModel
 from django.db.models.fields.related import ForeignKey, OneToOneField
 import drfs, json
-from drfs.transform import FIELD_MAP
+from drfs.generators.model import DjangoOrmModelGenerator
+
+FIELD_MAP = DjangoOrmModelGenerator.model_fields_mapping
 
 
 class Model(TestCase):

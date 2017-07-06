@@ -1,5 +1,4 @@
 from ... import helpers
-from ..field_definition import DjangoFieldDefinition
 
 
 
@@ -7,7 +6,7 @@ from ..field_definition import DjangoFieldDefinition
 
 
 class BaseModelGenerator(object):
-    default_fields_map = {}
+    model_fields_mapping = {}
     default_model_class = None
 
 
@@ -20,19 +19,22 @@ class BaseModelGenerator(object):
         self.module_name = str(module_name)
 
 
-    def field_definition_to_django(self, field_name, field_params):
-        field = DjangoFieldDefinition()
+    def get_model_class(self, model_path):
+        if '.' not in model_path:
+            return model_path
+        return helpers.import_class(model_path)
 
-        if self.default_fields_map.has_key(field_params['type']):
-            field.field_class = self.default_fields_map[field_params['type']]
+
+    def build_field(self, name, params):
+        if self.model_fields_mapping.has_key(params['type']):
+            field_class = self.model_fields_mapping[params['type']]
         else:
             try:
-                field.field_class = helpers.import_class(field_params['type'])
+                field_class = helpers.import_class(params['type'])
             except ImportError:
-                raise ValueError("DRFS - generators: No such field type '"+field_params['type']+"'. Field declared in '"+self.model_name+"' model")
+                raise ValueError("DRFS - generators: No such field type '"+params['type']+"'. Field declared in '"+self.model_name+"' model")
 
-        return field
-
+        return field_class, [], {}
 
 
     def to_django_model(self):
@@ -47,13 +49,14 @@ class BaseModelGenerator(object):
                 raise Exception("DRFS - generators: Expect 'field_params' to be dict. Got '" + str(type(field_params)) + "'")
             if not field_params.get('type', None):
                 raise Exception("DRFS - generators: No 'field' property in field_params definition for field generation")
-            convert_func = getattr(self, field_params['type'] + '_field_definition_to_django', None)
-            convert_func = convert_func or self.field_definition_to_django
 
-            field = convert_func(field_name, field_params)
-            fields[field_name] = field.field_class(
-                *field.args,
-                **field.kwargs
+            convert_func = getattr(self, 'build_field__'+ field_params['type'], None)
+            convert_func = convert_func or self.build_field
+            field_class, field_args, field_kwargs = convert_func(field_name, field_params)
+
+            fields[field_name] = field_class(
+                *field_args,
+                **field_kwargs
             )
 
 
