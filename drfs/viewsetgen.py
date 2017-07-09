@@ -1,4 +1,4 @@
-from rest_framework import viewsets, filters
+from rest_framework import viewsets
 from django.db import models
 from django.conf import settings
 
@@ -13,14 +13,11 @@ REST_FRAMEWORK = getattr(settings, 'REST_FRAMEWORK', {})
 def getViewsetParams(model_class, kwargs):
     DRFS_MODEL_DEFINITION = getattr(model_class, 'DRFS_MODEL_DEFINITION', {})
     viewsetPref = DRFS_MODEL_DEFINITION.get('viewset', {})
-    if REST_FRAMEWORK.get('DEFAULT_FILTER_BACKENDS', None):
-        filter_backends = [
-            helpers.import_class(m)
-            for m in REST_FRAMEWORK['DEFAULT_FILTER_BACKENDS']
-        ]
-    else:
-        from rest_framework import filters
-        filter_backends =  (filters.DjangoFilterBackend,)
+
+    filter_backends = [
+        helpers.import_class(m)
+        for m in REST_FRAMEWORK.get('DEFAULT_FILTER_BACKENDS', [])
+    ]
 
     if 'queryset' in kwargs.keys():
         queryset = kwargs['queryset']

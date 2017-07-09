@@ -1,7 +1,6 @@
 from django.test import TestCase
 from django.contrib.auth.models import User as UserModel
 from django.db.models.fields.related import ForeignKey
-from rest_framework import filters
 import drfs, json
 from . import models
 
@@ -27,7 +26,7 @@ class Viewset(TestCase):
         )
         self.assertEqual(
             viewset.filter_backends,
-            (filters.DjangoFilterBackend,)
+            tuple([])
         )
         self.assertEqual(
             viewset.permission_classes,

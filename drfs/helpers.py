@@ -60,6 +60,7 @@ def resize_and_crop_img(img, modified_path, size, quality=90):
     if not USE_GOOGLE_GLOUD:
         return img.save(modified_path, quality=quality)
     img_buffer = StringIO()
+    img = img.convert("RGB")
     img.save(img_buffer, quality=quality, format='JPEG')
     default_storage._save(modified_path, ImageFile(img_buffer))
 

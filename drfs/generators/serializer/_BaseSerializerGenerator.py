@@ -3,7 +3,11 @@ from ...models import L10nFile as L10nFileModelClass
 from ...serializers.models import L10nFile as L10nFileSerializerClass
 from ... import helpers
 
-
+try:
+    from drf_loopback_js_filters.serializers import LoopbackJsSerializerMixin
+except:
+    class LoopbackJsSerializerMixin(object):
+        pass
 
 
 
@@ -114,26 +118,6 @@ class BaseSerializerGenerator(object):
         }
 
         class DRFS_Serializer(object):
-            def __init__(self, *args, **kwargs):
-                super(DRFS_Serializer, self).__init__(*args, **kwargs)
-                context = kwargs.get('context', {})
-                request = context.get('request', {})
-                lb_fields = getattr(request, 'LB_FILTER_FIELDS', None)
-
-                if lb_fields:
-                    if type(lb_fields) != type({}):
-                        raise TypeError("LB_FILTER_FIELDS in request context should be 'dict'. Got '"+str(type(lb_fields))+"'")
-
-                    existing = self.fields.keys()
-                    if lb_fields.get('only', None):
-                        for f in existing:
-                            if f not in lb_fields['only']:
-                                self.fields.pop(f)
-                    elif lb_fields.get('defer', None):
-                        for f in lb_fields['defer']:
-                            if f in existing:
-                                self.fields.pop(f)
-
             class Meta:
                 model = meta['model']
                 fields = meta['fields']
@@ -147,6 +131,8 @@ class BaseSerializerGenerator(object):
             ]
         elif self.default_serializer_class:
             base_class = [self.default_serializer_class]
+
+        base_class.insert(0, LoopbackJsSerializerMixin)
         base_class.append(DRFS_Serializer)
 
         _cls = type(self.model_name, tuple(base_class), fields_serializers)
