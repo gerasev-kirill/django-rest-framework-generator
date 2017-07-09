@@ -83,7 +83,13 @@ class BaseSerializerGenerator(object):
                 serializer_class = v
 
         if not serializer_class and params.get('type', None) in self.model_relation_types:
-            return self.build_relational_serializer(django_field, params)
+            serializer_class, serializer_args, serializer_kwargs = self.build_relational_serializer(
+                django_field,
+                params
+            )
+            if params.get('_serializer', {}).get('read_only', False):
+                serializer_kwargs['read_only'] = True
+
         return serializer_class, serializer_args, serializer_kwargs
 
 
