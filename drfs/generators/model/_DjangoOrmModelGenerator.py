@@ -49,6 +49,8 @@ class DjangoOrmModelGenerator(BaseModelGenerator):
     model_fields_mapping = {
         'string': django_fields.CharField,
         'int': django_fields.IntegerField,
+        'float': django_fields.FloatField,
+        'number': django_fields.FloatField,
         'object': JSONField,
         'date': django_fields.DateField,
         'datetime': django_fields.DateTimeField,
