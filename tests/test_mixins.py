@@ -2,6 +2,7 @@ from django.test import TestCase, RequestFactory
 from django.contrib.auth.models import User as UserModel
 from rest_framework.viewsets import ModelViewSet
 from rest_framework import filters
+from django.http import Http404
 
 import drfs, json
 
@@ -55,6 +56,66 @@ class CountMixin(TestCase):
         )
 
 
+
+class FindOneMixin(TestCase):
+    def setUp(self):
+        self.factory = RequestFactory()
+
+    def test_find(self):
+        class FindOneMixinTest(drfs.mixins.FindOneModelMixin, ModelViewSet):
+            queryset = UserModel.objects.all()
+            serializer_class = drfs.generate_serializer(UserModel, visible_fields=[
+                'username',
+                'id'
+            ])
+            filter_backends = (filters.DjangoFilterBackend,)
+            filter_fields = {'username':['contains'], }
+
+        for s in ["test string 1", "test string 2", "another string 3"]:
+            UserModel.objects.create(
+                username=s,
+                email=s+"@mail.com",
+                password="1"
+            )
+
+        request = self.factory.get('/')
+        response = FindOneMixinTest.as_view({'get': 'find_one'})(request)
+
+        self.assertEqual(
+            response.status_code,
+            200
+        )
+        self.assertEqual(
+            response.data['id'],
+            1
+        )
+
+
+        request = self.factory.get('/?username__contains=2')
+        response = FindOneMixinTest.as_view({'get': 'find_one'})(request)
+
+        self.assertEqual(
+            response.status_code,
+            200
+        )
+        self.assertEqual(
+            response.data['id'],
+            2
+        )
+        ##
+        #  http 404
+        ##
+        request = self.factory.get('/?username__contains=http404_name')
+        response = FindOneMixinTest.as_view({'get': 'find_one'})(request)
+
+        self.assertEqual(
+            response.status_code,
+            404
+        )
+        self.assertEqual(
+            response.data['detail'],
+            'Not found.'
+        )
 
 
 class UserRegisterLoginLogoutMixin(TestCase):
