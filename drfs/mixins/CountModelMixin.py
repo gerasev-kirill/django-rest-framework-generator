@@ -26,4 +26,4 @@ class CountModelMixin(object):
               paramType: query
         """
         queryset = self.filter_queryset(self.get_queryset())
-        return Response({'count':queryset.count()})
+        return Response(queryset.count())

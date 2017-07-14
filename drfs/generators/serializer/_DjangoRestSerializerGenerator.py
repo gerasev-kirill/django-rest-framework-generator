@@ -41,6 +41,16 @@ class DjangoRestSerializerGenerator(BaseSerializerGenerator):
         return super(DjangoRestSerializerGenerator, self).get_model_class(model_path)
 
 
+    def build_relational_serializer__embedsMany(self, django_field, params):
+        serializer_args = []
+        serializer_kwargs = {
+            'help_text': getattr(django_field, 'help_text', ''),
+            'many': True
+        }
+        to_model = self.get_model_class(params['model'])
+        from drfs import generate_serializer
+        return generate_serializer(to_model), serializer_args, serializer_kwargs
+
     def build_relational_serializer(self, django_field, params):
         _params = params.get('_serializer', None)
         if not _params or params.get('type', None) not in self.model_relation_types:

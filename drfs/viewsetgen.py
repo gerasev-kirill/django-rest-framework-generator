@@ -94,7 +94,14 @@ class ViewsetGenFactory(type):
             model_acl = DRFS_MODEL_DEFINITION.get('acl', [])
         else:
             model_acl = kwargs.get('acl')
-        new_cls = type(name, tuple(classes), params)
+        new_cls = type(name, tuple(classes), {})
+
+        for class_prop, generated_value in params.items():
+            if getattr(new_cls, class_prop, None):
+                del params[class_prop]
+
+        new_cls = type(name, (new_cls,), params)
+
         for prop in dir(new_cls):
             if prop in ['list', 'retrieve', 'update', 'partial_update', 'create', 'destroy']:
                 setattr(new_cls, prop,

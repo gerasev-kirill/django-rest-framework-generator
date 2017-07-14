@@ -78,18 +78,21 @@ class BaseSerializerGenerator(object):
         }
         params = params or {}
 
-        for k,v in self.serializer_field_mapping.items():
-            if isinstance(django_field, k):
-                serializer_class = v
-
-        if not serializer_class and params.get('type', None) in self.model_relation_types:
-            serializer_class, serializer_args, serializer_kwargs = self.build_relational_serializer(
-                django_field,
-                params
+        if params.get('type', None) in self.model_relation_types:
+            build_relational_serializer = getattr(
+                self,
+                'build_relational_serializer__'+params['type'],
+                self.build_relational_serializer
             )
-            if params.get('_serializer', {}).get('read_only', False):
-                serializer_kwargs['read_only'] = True
+            serializer_class, serializer_args, serializer_kwargs = build_relational_serializer(django_field, params)
 
+        if not serializer_class:
+            for k,v in self.serializer_field_mapping.items():
+                if django_field.__class__ == k:
+                    serializer_class = v
+
+        if params.get('_serializer', {}).get('read_only', False):
+            serializer_kwargs['read_only'] = True
         return serializer_class, serializer_args, serializer_kwargs
 
 

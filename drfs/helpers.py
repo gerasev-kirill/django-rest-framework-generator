@@ -57,10 +57,10 @@ def resize_and_crop_img(img, modified_path, size, quality=90):
         img = img.resize((size[0], size[1]),
                          Image.ANTIALIAS)
         # If the scale is the same, we do not need to crop
-    if not USE_GOOGLE_GLOUD:
-        return img.save(modified_path, quality=quality)
-    img_buffer = StringIO()
     img = img.convert("RGB")
+    #if not USE_GOOGLE_GLOUD:
+    #    return img.save(modified_path, quality=quality)
+    img_buffer = StringIO()
     img.save(img_buffer, quality=quality, format='JPEG')
     default_storage._save(modified_path, ImageFile(img_buffer))
 
@@ -72,7 +72,7 @@ def process_l10nFile(l10nFile, options={}):
         поэтому заменяем названия на uuid1
     """
     file_name = os.path.splitext(l10nFile.file_data.name)
-    file_name = str(uuid.uuid1()) + file_name[1]
+    file_name = str(uuid.uuid1()) + file_name[-1]
     l10nFile.file_data.name = file_name
 
     if 'image' not in l10nFile.meta_data['type']:
@@ -116,13 +116,10 @@ def process_l10nFile(l10nFile, options={}):
             'width': img_width,
             'height': img_height
         }
-        if USE_GOOGLE_GLOUD:
-            img_buffer = StringIO()
-            img.save(img_buffer, quality=options['quality'], format=img.format)
-            l10nFile.file_data = ImageFile(img_buffer)
-            l10nFile.file_data.name = file_name
-        else:
-            img.save(str(l10nFile.file_data), quality=options['quality'])
+        img_buffer = StringIO()
+        img.save(img_buffer, quality=options['quality'], format=img.format)
+        l10nFile.file_data = ImageFile(img_buffer)
+        l10nFile.file_data.name = file_name
 
     l10nFile.meta_data['width'] = size['width']
     l10nFile.meta_data['height'] = size['height']
