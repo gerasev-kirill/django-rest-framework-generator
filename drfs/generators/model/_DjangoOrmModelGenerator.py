@@ -123,6 +123,8 @@ class DjangoOrmModelGenerator(BaseModelGenerator):
             field_kwargs['blank'] = True
         if not field_kwargs.has_key('null'):
             field_kwargs['null'] = True
+        if params.get('foreignKey', None):
+            field_kwargs['related_name'] = params['foreignKey']
 
         to_model = self.get_model_class(params['model'])
         field_args = (to_model,)
@@ -155,6 +157,8 @@ class DjangoOrmModelGenerator(BaseModelGenerator):
             field_kwargs['blank'] = True
         if field_kwargs.has_key('null'):
             del field_kwargs['null']
+        if params.get('foreignKey', None):
+            field_kwargs['related_name'] = params['foreignKey']
 
         to_model = self.get_model_class(params['model'])
         field_args = (to_model,)
