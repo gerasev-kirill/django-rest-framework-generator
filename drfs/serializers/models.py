@@ -12,6 +12,13 @@ class L10nFile(serializers.HyperlinkedModelSerializer):
         return 'en'
 
     def get_en(self, obj):
+        if isinstance(obj, int):
+            try:
+                obj = L10nFileModelClass.objects.get(id=obj)
+            except:
+                return None
+        if not obj:
+            return obj
         name = str(obj.file_data)
         name = name.replace(settings.MEDIA_ROOT, '')
         if name[0] == '/':

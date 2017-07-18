@@ -38,7 +38,7 @@ class CountMixin(TestCase):
             200
         )
         self.assertEqual(
-            response.data['count'],
+            response.data,
             3
         )
 
@@ -51,7 +51,7 @@ class CountMixin(TestCase):
             200
         )
         self.assertEqual(
-            response.data['count'],
+            response.data,
             2
         )
 

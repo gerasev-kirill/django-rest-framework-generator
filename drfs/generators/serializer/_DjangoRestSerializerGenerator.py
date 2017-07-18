@@ -49,7 +49,14 @@ class DjangoRestSerializerGenerator(BaseSerializerGenerator):
         }
         to_model = self.get_model_class(params['model'])
         from drfs import generate_serializer
-        return generate_serializer(to_model), serializer_args, serializer_kwargs
+
+        BaseEmbeddedSerializer = generate_serializer(to_model)
+        class EmbedsManySerializer(BaseEmbeddedSerializer):
+            id = rest_serializers.SerializerMethodField()
+            def get_id(self, obj):
+                return obj
+
+        return EmbedsManySerializer, serializer_args, serializer_kwargs
 
     def build_relational_serializer(self, django_field, params):
         _params = params.get('_serializer', None)

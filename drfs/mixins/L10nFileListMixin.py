@@ -14,15 +14,14 @@ class L10nFileListMixin(object):
     def check_upload_l10nfile_list_field_exists(self, forModelField):
         queryset = self.get_queryset()
         modelClass = queryset.model
-        exist = False
-
+        exits = False
         for field in modelClass._meta.get_fields():
             if field.name == forModelField:
-                exist = True
+                exits = True
                 break
-        if not exist or forModelField not in self.l10nfile_list_allowed_fields:
-            raise exceptions.NotAcceptable(detail="Unknown L10nFile field \""+forModelField+"\" for model \""+modelClass._meta.object_name+"\".")
-        return True
+        if exits or forModelField in self.l10nfile_list_allowed_fields:
+            return True
+        raise exceptions.NotAcceptable(detail="Unknown L10nFile field \""+forModelField+"\" for model \""+modelClass._meta.object_name+"\".")
 
 
     def get_l10nfile_list_data(self, objects=None, pks=None):
@@ -91,7 +90,7 @@ class L10nFileListMixin(object):
                         l10nFile.description = description
                     break
             if title or description:
-                l10nFile.save()
+                l10nFile.save(ignore_processing=True)
 
         objects = L10nFile.objects.filter(pk__in=fileList)
         for l10nFile in objects:
