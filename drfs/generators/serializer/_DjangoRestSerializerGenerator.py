@@ -68,6 +68,9 @@ class DjangoRestSerializerGenerator(BaseSerializerGenerator):
         serializer_kwargs = {
             'help_text': getattr(django_field, 'help_text', '')
         }
+        if not params.get('required', True):
+            serializer_kwargs['required'] = False
+            serializer_kwargs['allow_null'] = True
 
         generator_kwargs = {
             'visible_fields': _params.get('visible_fields', []),
