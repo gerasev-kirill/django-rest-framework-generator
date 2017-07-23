@@ -1,6 +1,3 @@
-
-from ...models import L10nFile as L10nFileModelClass
-from ...serializers.models import L10nFile as L10nFileSerializerClass
 from ... import helpers
 
 try:
@@ -97,9 +94,6 @@ class BaseSerializerGenerator(object):
 
 
     def to_serializer(self):
-        if self.model_class == L10nFileModelClass:
-            return L10nFileSerializerClass
-
         fields_serializers = {}
         read_only_fields = []
         modeldef_fields = self.model_definition.get('properties', {}).copy()

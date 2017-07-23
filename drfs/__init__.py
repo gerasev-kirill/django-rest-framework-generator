@@ -21,6 +21,10 @@ def find_model_definition(name):
                 break
         if path:
             break
+    if not path and not module_name:
+        p = os.path.join(settings.BASE_DIR, 'models.json', name)
+        if os.path.exists(p) and os.path.isfile(p):
+            return (os.path.basename(settings.BASE_DIR), p)
     return (module_name, path)
 
 
@@ -63,11 +67,6 @@ def generate_model(name):
 
 
 def generate_serializer(model_class, **kwargs):
-    from .models import L10nFile as L10nFileModelClass
-    from .serializers.models import L10nFile as L10nFileSerializerClass
-    if model_class == L10nFileModelClass:
-        return L10nFileSerializerClass
-
     if isinstance(model_class, str):
         model_class = generate_model(model_class)
 

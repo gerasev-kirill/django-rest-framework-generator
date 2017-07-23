@@ -17,11 +17,10 @@ def on_delete(sender, instance, **kwargs):
     model_name = getattr(_meta, 'object_name', None)
     if model_name not in REGISTERED_RECEIVERS.keys():
         return
-    fields = REGISTERED_RECEIVERS[model_name].get('delete_embedsMany', {})
-    for fname, embedded_model_class in fields.items():
-        ids = getattr(instance, fname, [])
-        if ids:
-            embedded_model_class.objects.filter(id__in=ids).delete()
+    field_names = REGISTERED_RECEIVERS[model_name].get('delete_hasMany', [])
+    for name in field_names:
+        field_set = getattr(instance, name)
+        field_set.all().delete()
 
 
 
@@ -123,8 +122,8 @@ class DjangoOrmModelGenerator(BaseModelGenerator):
             field_kwargs['blank'] = True
         if not field_kwargs.has_key('null'):
             field_kwargs['null'] = True
-        if params.get('foreignKey', None):
-            field_kwargs['related_name'] = params['foreignKey']
+        if params.get('relationName', None):
+            field_kwargs['related_name'] = params['relationName']
 
         to_model = self.get_model_class(params['model'])
         field_args = (to_model,)
@@ -157,11 +156,18 @@ class DjangoOrmModelGenerator(BaseModelGenerator):
             field_kwargs['blank'] = True
         if field_kwargs.has_key('null'):
             del field_kwargs['null']
-        if params.get('foreignKey', None):
-            field_kwargs['related_name'] = params['foreignKey']
+        if params.get('relationName', None):
+            field_kwargs['related_name'] = params['relationName']
 
         to_model = self.get_model_class(params['model'])
         field_args = (to_model,)
+
+        if params.get('on_delete', None) == 'CASCADE':
+            REGISTERED_RECEIVERS[self.model_name] = REGISTERED_RECEIVERS.get(self.model_name, {})
+            REGISTERED_RECEIVERS[self.model_name]['delete_hasMany'] = \
+                REGISTERED_RECEIVERS[self.model_name].get('delete_hasMany', [])
+
+            REGISTERED_RECEIVERS[self.model_name]['delete_hasMany'].append(name)
 
         return field_class, field_args, field_kwargs
 
@@ -173,8 +179,8 @@ class DjangoOrmModelGenerator(BaseModelGenerator):
 
         to_model = self.get_model_class(params['model'])
         REGISTERED_RECEIVERS[self.model_name] = REGISTERED_RECEIVERS.get(self.model_name, {})
-        REGISTERED_RECEIVERS[self.model_name]['delete_embedsMany'] = \
-            REGISTERED_RECEIVERS[self.model_name].get('delete_embedsMany', {})
+        REGISTERED_RECEIVERS[self.model_name]['delete_hasMany'] = \
+            REGISTERED_RECEIVERS[self.model_name].get('delete_hasMany', {})
 
-        REGISTERED_RECEIVERS[self.model_name]['delete_embedsMany'][name] = to_model
+        REGISTERED_RECEIVERS[self.model_name]['delete_hasMany'][name] = to_model
         return field_class, field_args, field_kwargs
