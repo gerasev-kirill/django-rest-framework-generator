@@ -1,9 +1,8 @@
-from . import mixins
+from . import helpers
 from .viewsetgen import ViewsetGenFactory
 import json, os, errno
 from django.conf import settings
 
-from generators.model import DjangoOrmModelGenerator
 
 
 def find_model_definition(name):
@@ -42,6 +41,8 @@ def get_model(name, app=None):
     return model
 
 
+
+
 def generate_model(name):
     name = os.path.basename(name)
     model = get_model(name)
@@ -59,8 +60,12 @@ def generate_model(name):
     with open(path) as f:
         definition = json.load(f)
 
-    name = definition.get('name', name)
-    converter = DjangoOrmModelGenerator(definition, module_name)
+    if getattr(settings, 'DRF_GENERATOR', {}).get('model', {}).get('default_generator', None):
+        MODEL_GENERATOR_CLASS = helpers.import_class(settings.DRF_GENERATOR['model']['default_generator'])
+    else:
+        from generators.model import DjangoOrmModelGenerator
+        MODEL_GENERATOR_CLASS = DjangoOrmModelGenerator
+    converter = MODEL_GENERATOR_CLASS(definition, module_name)
     return converter.to_django_model()
 
 
@@ -70,8 +75,12 @@ def generate_serializer(model_class, **kwargs):
     if isinstance(model_class, str):
         model_class = generate_model(model_class)
 
-    from generators.serializer import DjangoRestSerializerGenerator
-    generator = DjangoRestSerializerGenerator(model_class, **kwargs)
+    if getattr(settings, 'DRF_GENERATOR', {}).get('serializer', {}).get('default_generator', None):
+        SERIALIZER_GENERATOR_CLASS = helpers.import_class(settings.DRF_GENERATOR['serializer']['default_generator'])
+    else:
+        from generators.serializer import DjangoRestSerializerGenerator
+        SERIALIZER_GENERATOR_CLASS = DjangoRestSerializerGenerator
+    generator = SERIALIZER_GENERATOR_CLASS(model_class, **kwargs)
     return generator.to_serializer()
 
 
