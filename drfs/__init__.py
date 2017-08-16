@@ -5,7 +5,19 @@ from django.conf import settings
 
 
 
-def find_model_definition(name):
+def find_model_definition(name, path=None):
+    if os.path.isfile(path):
+        module_name = None
+        d = os.path.dirname(path)
+        basename = os.path.basename(d)
+        while basename:
+            if basename not in ['__init__', 'models.json']:
+                module_name = basename
+                break
+            d = os.path.dirname(d)
+            basename = os.path.basename(d)
+        return (module_name, path)
+
     path = None
     module_name = None
     for d in os.listdir(settings.BASE_DIR):
@@ -43,13 +55,13 @@ def get_model(name, app=None):
 
 
 
-def generate_model(name):
-    name = os.path.basename(name)
+def generate_model(path):
+    name = os.path.basename(path)
     model = get_model(name)
     if model:
         return model
 
-    module_name, path = find_model_definition(name)
+    module_name, path = find_model_definition(name, path)
     if not module_name and not path:
         raise OSError(
             errno.ENOENT,
