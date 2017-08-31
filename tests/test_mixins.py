@@ -5,7 +5,7 @@ from rest_framework import filters
 from django.http import Http404
 
 import drfs, json
-
+from drfs import mixins
 
 
 
@@ -17,7 +17,7 @@ class CountMixin(TestCase):
         self.factory = RequestFactory()
 
     def test_count(self):
-        class CountMixinTest(drfs.mixins.CountModelMixin, ModelViewSet):
+        class CountMixinTest(mixins.CountModelMixin, ModelViewSet):
             queryset = UserModel.objects.all()
             serializer_class = drfs.generate_serializer(UserModel)
             filter_backends = (filters.DjangoFilterBackend,)
@@ -62,7 +62,7 @@ class FindOneMixin(TestCase):
         self.factory = RequestFactory()
 
     def test_find(self):
-        class FindOneMixinTest(drfs.mixins.FindOneModelMixin, ModelViewSet):
+        class FindOneMixinTest(mixins.FindOneModelMixin, ModelViewSet):
             queryset = UserModel.objects.all()
             serializer_class = drfs.generate_serializer(UserModel, visible_fields=[
                 'username',
@@ -136,7 +136,7 @@ class UserRegisterLoginLogoutMixin(TestCase):
 
     def test_register(self):
 
-        class UserRegisterLoginLogoutMixinTest(drfs.mixins.UserRegisterLoginLogoutMixin, ModelViewSet):
+        class UserRegisterLoginLogoutMixinTest(mixins.UserRegisterLoginLogoutMixin, ModelViewSet):
             queryset = UserModel.objects.all()
             serializer_class = drfs.generate_serializer(UserModel)
             user_serializer_class = self.userFullSerializer
@@ -225,7 +225,7 @@ class UserRegisterLoginLogoutMixin(TestCase):
 
     def test_login(self):
 
-        class UserRegisterLoginLogoutMixinTest(drfs.mixins.UserRegisterLoginLogoutMixin, ModelViewSet):
+        class UserRegisterLoginLogoutMixinTest(mixins.UserRegisterLoginLogoutMixin, ModelViewSet):
             queryset = UserModel.objects.all()
             serializer_class = drfs.generate_serializer(UserModel)
             user_serializer_class = self.userFullSerializer
@@ -295,7 +295,7 @@ class UserRegisterLoginLogoutMixin(TestCase):
 
     def test_logout(self):
 
-        class UserRegisterLoginLogoutMixinTest(drfs.mixins.UserRegisterLoginLogoutMixin, ModelViewSet):
+        class UserRegisterLoginLogoutMixinTest(mixins.UserRegisterLoginLogoutMixin, ModelViewSet):
             queryset = UserModel.objects.all()
             serializer_class = drfs.generate_serializer(UserModel)
             user_serializer_class = self.userFullSerializer
@@ -330,7 +330,7 @@ class QuerysetExistsMixin(TestCase):
         self.factory = RequestFactory()
 
     def test_count(self):
-        class QuerysetExistsMixinTest(drfs.mixins.QuerysetExistsModelMixin, ModelViewSet):
+        class QuerysetExistsMixinTest(mixins.QuerysetExistsModelMixin, ModelViewSet):
             queryset = UserModel.objects.all()
             serializer_class = drfs.generate_serializer(UserModel)
             filter_backends = (filters.DjangoFilterBackend,)
