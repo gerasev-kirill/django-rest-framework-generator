@@ -7,3 +7,4 @@ wsgiref==0.1.2
 Pillow>=3.4.2
 git+https://github.com/gerasev-kirill/django-gcloud-storage.git
 djangorestframework-filters==0.10.1
+django-model-changes==0.15

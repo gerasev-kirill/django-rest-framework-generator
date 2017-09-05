@@ -1,5 +1,5 @@
 from ... import helpers
-
+from django_model_changes import ChangesMixin
 
 
 
@@ -63,6 +63,6 @@ class BaseModelGenerator(object):
         base_class = helpers.import_class(
             self.model_definition.get('base', self.default_model_class)
         )
-        model_cls = type(self.model_name, (base_class,), fields)
+        model_cls = type(self.model_name, (ChangesMixin, base_class), fields)
         setattr(model_cls, 'DRFS_MODEL_DEFINITION', self.model_definition)
         return model_cls

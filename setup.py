@@ -20,7 +20,8 @@ setup(
         'Django>=1.10',
         'djangorestframework',
         'Pillow>=3.4.2',
-        'jsonfield'
+        'jsonfield',
+        'django-model-changes==0.15'
     ],
     classifiers=[
         'Environment :: Web Environment',
