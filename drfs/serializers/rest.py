@@ -44,8 +44,8 @@ class UserRegisterSerializer(serializers.Serializer):
 
     def __init__(self, *args, **kwargs):
         super(UserRegisterSerializer, self).__init__(*args, **kwargs)
-        from django.contrib.auth.models import User as ModelClass
-        self.ModelClass = ModelClass
+        from django.contrib.auth import get_user_model
+        self.ModelClass = get_user_model()
 
     def is_username_unique(self, username):
         return True
