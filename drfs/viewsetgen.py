@@ -96,7 +96,8 @@ class ViewsetGenFactory(type):
             model_acl = kwargs.get('acl')
         new_cls = type(name, tuple(classes), {})
 
-        for class_prop, generated_value in params.items():
+        # params.items - RuntimeError: dictionary changed size during iteration
+        for class_prop, generated_value in list(params.items()):
             if getattr(new_cls, class_prop, None):
                 del params[class_prop]
 
