@@ -5,7 +5,7 @@ from django.conf import settings as django_settings
 from django.dispatch import receiver
 from jsonfield import JSONField
 
-from _BaseModelGenerator import BaseModelGenerator
+from ._BaseModelGenerator import BaseModelGenerator
 from ... import helpers
 from ...db import fields as drfs_fields
 
@@ -15,7 +15,7 @@ REGISTERED_RECEIVERS = {}
 def on_delete(sender, instance, **kwargs):
     _meta = getattr(sender, '_meta', {})
     model_name = getattr(_meta, 'object_name', None)
-    if model_name not in REGISTERED_RECEIVERS.keys():
+    if model_name not in REGISTERED_RECEIVERS:
         return
     field_names = REGISTERED_RECEIVERS[model_name].get('delete_hasMany', [])
     for name in field_names:
@@ -72,13 +72,13 @@ class DjangoOrmModelGenerator(BaseModelGenerator):
     def build_field(self, name, params):
         field_class, field_args, field_kwargs = super(DjangoOrmModelGenerator, self).build_field(name, params)
 
-        if params.has_key('default'):
+        if 'default' in params:
             field_kwargs['default'] = params['default']
-        if params.has_key('choices'):
+        if 'choices' in params:
             field_kwargs['choices'] = fix_choices(params['choices'])
-        if params.has_key('description'):
+        if 'description' in params:
             field_kwargs['help_text'] = params['description']
-        if params.has_key('required') and params['required'] == False:
+        if 'required' in params and params['required'] == False:
             field_kwargs['blank'] = True
             field_kwargs['null'] = True
 
@@ -118,9 +118,9 @@ class DjangoOrmModelGenerator(BaseModelGenerator):
 
     def build_field__belongsTo(self, name, params):
         field_class, field_args, field_kwargs = self.build_field(name, params)
-        if not field_kwargs.has_key('blank'):
+        if 'blank' not in field_kwargs:
             field_kwargs['blank'] = True
-        if not field_kwargs.has_key('null'):
+        if 'null' not in field_kwargs:
             field_kwargs['null'] = True
         if params.get('relationName', None):
             field_kwargs['related_name'] = params['relationName']
@@ -136,9 +136,9 @@ class DjangoOrmModelGenerator(BaseModelGenerator):
 
     def build_field__hasOne(self, name, params):
         field_class, field_args, field_kwargs = self.build_field(name, params)
-        if not field_kwargs.has_key('blank'):
+        if 'blank' not in field_kwargs:
             field_kwargs['blank'] = True
-        if not field_kwargs.has_key('null'):
+        if 'null' not in field_kwargs:
             field_kwargs['null'] = True
 
         to_model = self.get_model_class(params['model'])
@@ -152,9 +152,9 @@ class DjangoOrmModelGenerator(BaseModelGenerator):
 
     def build_field__hasMany(self, name, params):
         field_class, field_args, field_kwargs = self.build_field(name, params)
-        if not field_kwargs.has_key('blank'):
+        if 'blank' not in field_kwargs:
             field_kwargs['blank'] = True
-        if field_kwargs.has_key('null'):
+        if 'null' in field_kwargs:
             del field_kwargs['null']
         if params.get('relationName', None):
             field_kwargs['related_name'] = params['relationName']
@@ -174,7 +174,7 @@ class DjangoOrmModelGenerator(BaseModelGenerator):
 
     def build_field__embedsMany(self, name, params):
         field_class, field_args, field_kwargs = self.build_field(name, params)
-        if not field_kwargs.has_key('default'):
+        if 'default' not in field_kwargs:
             field_kwargs['default'] = []
 
         to_model = self.get_model_class(params['model'])

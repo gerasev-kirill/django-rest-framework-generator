@@ -19,30 +19,30 @@ def getViewsetParams(model_class, kwargs):
         for m in REST_FRAMEWORK.get('DEFAULT_FILTER_BACKENDS', [])
     ]
 
-    if 'queryset' in kwargs.keys():
+    if 'queryset' in kwargs:
         queryset = kwargs['queryset']
     else:
         queryset = model_class.objects.all()
-    if 'serializer_class' in kwargs.keys():
+    if 'serializer_class' in kwargs:
         serializer_class = kwargs['serializer_class']
     else:
         from . import generate_serializer
         serializer_class = generate_serializer(model_class)
-    if 'filter_backends' in kwargs.keys():
+    if 'filter_backends' in kwargs:
         filter_backends = kwargs['filter_backends']
-    elif viewsetPref.has_key('filter_backends'):
+    elif 'filter_backends' in viewsetPref:
         filter_backends = []
         for fb in viewsetPref['filter_backends']:
             filter_backends.append(
                 helpers.import_class(fb)
             )
-    if 'filter_fields' in kwargs.keys():
+    if 'filter_fields' in kwargs:
         filter_fields = kwargs['filter_fields']
-    elif viewsetPref.has_key('filter_fields'):
+    elif 'filter_fields' in viewsetPref:
         filter_fields = viewsetPref['filter_fields']
     else:
-        items = DRFS_MODEL_DEFINITION.get('properties', {}).items()
-        items += DRFS_MODEL_DEFINITION.get('relations',{}).items()
+        items = list(DRFS_MODEL_DEFINITION.get('properties', {}).items())
+        items += list(DRFS_MODEL_DEFINITION.get('relations',{}).items())
         filter_fields = [
             str(k)   for k,v in items
         ]
@@ -62,7 +62,7 @@ class ViewsetGenFactory(type):
         DRFS_MODEL_DEFINITION = getattr(model_class, 'DRFS_MODEL_DEFINITION', {})
         viewsetPref = DRFS_MODEL_DEFINITION.get('viewset', {})
 
-        if 'mixins' in kwargs.keys():
+        if 'mixins' in kwargs:
             mixins = kwargs['mixins']
         else:
             mixins = []
@@ -70,7 +70,7 @@ class ViewsetGenFactory(type):
                 mixins.append(
                     helpers.import_class(m)
                 )
-        if 'add_mixin' in kwargs.keys():
+        if 'add_mixin' in kwargs:
             mixins.append(kwargs['add_mixin'])
 
         if viewsetPref.get('base', None):

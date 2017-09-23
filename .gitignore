@@ -3,7 +3,10 @@ dist
 *.pyc
 *.pyo
 ap2
+ap3
 *.sqlite3
 .*
 /key.json
 !.gitignore
+__pycache__
+*.bak

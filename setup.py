@@ -1,10 +1,15 @@
-import os
+import os, six
 from setuptools import setup
 
 README = open(os.path.join(os.path.dirname(__file__), 'README.rst')).read()
 
 # allow setup.py to be run from any path
 os.chdir(os.path.normpath(os.path.join(os.path.abspath(__file__), os.pardir)))
+
+if six.PY2:
+    dmc_module = 'django-model-changes==0.15'
+else:
+    dmc_module = 'django-model-changes-py3==0.14.1'
 
 setup(
     name='django-rest-framework-generator',
@@ -17,11 +22,11 @@ setup(
     author='Gerasev Kirill',
     author_email='gerasev.kirill@gmail.com',
     install_requires=[
-        'Django>=1.10',
+        'Django>=1.11',
         'djangorestframework',
-        'Pillow>=3.4.2',
+        'Pillow>=4.2.1',
         'jsonfield',
-        'django-model-changes==0.15'
+        dmc_module
     ],
     classifiers=[
         'Environment :: Web Environment',

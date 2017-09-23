@@ -46,8 +46,8 @@ class BaseSerializerGenerator(object):
                     self.allowed_fields.append(name)
         else:
             self.allowed_fields = list(all_fields)
-            modeldef_fields = self.model_definition.get('properties', {}).items() + \
-                self.model_definition.get('relations', {}).items()
+            modeldef_fields = list(self.model_definition.get('properties', {}).items()) + \
+                list(self.model_definition.get('relations', {}).items())
 
             for field_name, field_params in modeldef_fields:
                 if field_params.get('hidden', False) and field_name in all_fields:

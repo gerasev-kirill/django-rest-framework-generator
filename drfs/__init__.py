@@ -47,7 +47,7 @@ def get_model(name, app=None):
         model = apps.get_model(app, name)
     else:
         for m_name, m_models in apps.all_models.items():
-            if m_models.has_key(name):
+            if name in m_models:
                 model = m_models[name]
                 break
     return model
@@ -75,7 +75,7 @@ def generate_model(path):
     if getattr(settings, 'DRF_GENERATOR', {}).get('model', {}).get('default_generator', None):
         MODEL_GENERATOR_CLASS = helpers.import_class(settings.DRF_GENERATOR['model']['default_generator'])
     else:
-        from generators.model import DjangoOrmModelGenerator
+        from .generators.model import DjangoOrmModelGenerator
         MODEL_GENERATOR_CLASS = DjangoOrmModelGenerator
     converter = MODEL_GENERATOR_CLASS(definition, module_name)
     return converter.to_django_model()
@@ -90,7 +90,7 @@ def generate_serializer(model_class, **kwargs):
     if getattr(settings, 'DRF_GENERATOR', {}).get('serializer', {}).get('default_generator', None):
         SERIALIZER_GENERATOR_CLASS = helpers.import_class(settings.DRF_GENERATOR['serializer']['default_generator'])
     else:
-        from generators.serializer import DjangoRestSerializerGenerator
+        from .generators.serializer import DjangoRestSerializerGenerator
         SERIALIZER_GENERATOR_CLASS = DjangoRestSerializerGenerator
     generator = SERIALIZER_GENERATOR_CLASS(model_class, **kwargs)
     return generator.to_serializer()

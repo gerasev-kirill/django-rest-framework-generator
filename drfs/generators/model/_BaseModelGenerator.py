@@ -26,7 +26,7 @@ class BaseModelGenerator(object):
 
 
     def build_field(self, name, params):
-        if self.model_fields_mapping.has_key(params['type']):
+        if params['type'] in self.model_fields_mapping:
             field_class = self.model_fields_mapping[params['type']]
         else:
             try:
@@ -41,8 +41,8 @@ class BaseModelGenerator(object):
         fields = {
             '__module__': self.module_name
         }
-        fields_definition = self.model_definition.get('properties', {}).items() + \
-            self.model_definition.get('relations', {}).items()
+        fields_definition = list(self.model_definition.get('properties', {}).items()) + \
+            list(self.model_definition.get('relations', {}).items())
 
         for field_name, field_params in fields_definition:
             if type(field_params) != type({}):

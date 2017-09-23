@@ -3,8 +3,7 @@ argparse==1.2.1
 django-filter==0.14.0
 djangorestframework==3.6.3
 jsonfield==1.0.3
-wsgiref==0.1.2
 Pillow>=4.2.1
 git+https://github.com/gerasev-kirill/django-gcloud-storage.git
 djangorestframework-filters==0.10.1
-django-model-changes==0.15
+django-model-changes-py3==0.14.1

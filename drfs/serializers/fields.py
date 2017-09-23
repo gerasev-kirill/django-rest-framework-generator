@@ -1,7 +1,6 @@
 from rest_framework import serializers, fields
 from django.utils import six
-import types, json
-
+import json
 
 
 
@@ -17,9 +16,9 @@ class JSONField(fields.JSONField):
             # On python 3.x json.dumps() returns unicode strings.
             if isinstance(value, six.text_type):
                 value = bytes(value.encode('utf-8'))
-        if type(value) == types.DictType:
+        if isinstance(value, dict):
             return value
-        if type(value) in [types.UnicodeType, types.StringType]:
+        if isinstance(value, six.string_types) or isinstance(value, six.text_type):
             try:
                 value = value.replace("u'", "\"")
                 value = value.replace("'", "\"")
@@ -43,7 +42,7 @@ class JSONField(fields.JSONField):
             return data
         value = self.to_internal_value(data)
         self.run_validators(value)
-        if type(value) == types.DictType:
+        if isinstance(value, dict):
             return value
         try:
             value = data.replace("u'", "\"")
@@ -62,9 +61,9 @@ class ListField(fields.JSONField):
             # On python 3.x json.dumps() returns unicode strings.
             if isinstance(value, six.text_type):
                 value = bytes(value.encode('utf-8'))
-        if type(value) == types.DictType:
+        if isinstance(value, dict):
             return value
-        if type(value) in [types.UnicodeType, types.StringType]:
+        if isinstance(value, six.string_types) or isinstance(value, six.text_type):
             try:
                 value = value.replace("u'", "\"")
                 value = value.replace("'", "\"")
@@ -88,7 +87,7 @@ class ListField(fields.JSONField):
             return data
         value = self.to_internal_value(data)
         self.run_validators(value)
-        if type(value) == types.ListType:
+        if isinstance(value, list):
             return value
         try:
             value = data.replace("u'", "\"")
