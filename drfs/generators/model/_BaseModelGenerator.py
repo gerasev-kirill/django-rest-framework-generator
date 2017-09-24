@@ -3,6 +3,11 @@ from django_model_changes import ChangesMixin
 
 
 
+class MetaAbstract:
+    abstract = True
+
+class MetaNoAbstract:
+    abstract = False
 
 
 class BaseModelGenerator(object):
@@ -63,6 +68,14 @@ class BaseModelGenerator(object):
         base_class = helpers.import_class(
             self.model_definition.get('base', self.default_model_class)
         )
+
+        if self.model_definition.get('options', {}).get('abstract', False):
+            fields['Meta'] = MetaAbstract
+            model_cls = type(self.model_name, (base_class,), fields)
+            model_cls._meta.abstract = True
+            return model_cls
+
+        fields['Meta'] = MetaNoAbstract
         model_cls = type(self.model_name, (ChangesMixin, base_class), fields)
         setattr(model_cls, 'DRFS_MODEL_DEFINITION', self.model_definition)
         return model_cls

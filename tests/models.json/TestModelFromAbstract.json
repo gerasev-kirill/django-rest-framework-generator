@@ -1,0 +1,11 @@
+{
+    "name": "TestModelFromAbstract",
+    "base": "tests.models.TestModelAbstract",
+    "properties":{
+        "new_field":{
+            "type": "string",
+            "max": 5,
+            "default": "hello"
+        }
+    }
+}

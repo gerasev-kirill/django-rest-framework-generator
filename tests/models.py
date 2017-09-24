@@ -12,3 +12,6 @@ TestModelWithRelations_Flat = drfs.generate_model('TestModelWithRelations_Flat.j
 TestModelWithRelations_Nested = drfs.generate_model('TestModelWithRelations_Nested.json')
 TestModelRalationBelongsTo = drfs.generate_model('TestModelRalationBelongsTo.json')
 TestModelRalationBelongsTo_withIgnore404Object = drfs.generate_model('TestModelRalationBelongsTo_withIgnore404Object.json')
+
+
+TestModelAbstract = drfs.generate_model('TestModelAbstract.json')

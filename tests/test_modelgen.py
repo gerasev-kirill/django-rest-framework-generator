@@ -38,6 +38,32 @@ class Model(TestCase):
                 modelJson['properties'][field.name]
             )
 
+    def test_abstract(self):
+        TestModelAbstract = drfs.generate_model('TestModelAbstract.json')
+        self.assertEqual(
+            TestModelAbstract._meta.abstract,
+            True
+        )
+        with open('./tests/models.json/TestModelFromAbstract.json') as f:
+            modelJson = json.load(f)
+        gen = DjangoOrmModelGenerator(modelJson, 'tests')
+        TestModelFromAbstract = gen.to_django_model()
+
+        opts = TestModelFromAbstract._meta
+        field_names = [
+            f.name
+            for f in opts.get_fields()
+        ]
+
+        self.assertEqual(
+            TestModelFromAbstract._meta.abstract,
+            False
+        )
+        self.assertEqual(
+            field_names,
+            [u'id', u'object_field', u'int_field', u'array_field', u'datetime_field', u'string_field', u'bool_field', u'new_field']
+        )
+
 
     def test_no_such_file(self):
         self.assertRaisesMessage(
