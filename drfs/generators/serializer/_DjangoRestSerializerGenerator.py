@@ -91,6 +91,22 @@ class DjangoRestSerializerGenerator(BaseSerializerGenerator):
 
         return serializer_class, serializer_args, serializer_kwargs
 
+    def build_serializer(self, django_field, params=None):
+        serializer_class, serializer_args, serializer_kwargs = super(DjangoRestSerializerGenerator, self).build_serializer(django_field, params)
+        params = params or {}
+        if params.get('type', None) == 'object' and (not params.get('required', True) or params.get('read_only', False)):
+            serializer_class = drfs_field_serializers.JSONField
+            serializer_kwargs['required'] = params.get('required', True)
+            serializer_kwargs['read_only'] = params.get('read_only', False)
+            if not serializer_kwargs['required']:
+                serializer_kwargs['allow_null'] = True
+        if params.get('type', None) == 'array' and (not params.get('required', True) or params.get('read_only', False)):
+            serializer_class = drfs_field_serializers.ListField
+            serializer_kwargs['required'] = params.get('required', True)
+            serializer_kwargs['read_only'] = params.get('read_only', False)
+            if not serializer_kwargs['required']:
+                serializer_kwargs['allow_null'] = True
+        return serializer_class, serializer_args, serializer_kwargs
 
     def to_serializer(self):
         _cls = super(DjangoRestSerializerGenerator, self).to_serializer()

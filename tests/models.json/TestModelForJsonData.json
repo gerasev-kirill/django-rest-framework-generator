@@ -1,0 +1,17 @@
+{
+    "name": "TestModelForJsonData",
+    "base": "django.db.models.Model",
+    "properties":{
+        "required":{
+            "type": "object",
+            "default": {}
+        },
+        "not_required":{
+            "type": "object",
+            "default": {
+                "default": "not_required"
+            },
+            "required": false
+        }
+    }
+}

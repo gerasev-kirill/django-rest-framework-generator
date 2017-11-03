@@ -15,3 +15,4 @@ TestModelRalationBelongsTo_withIgnore404Object = drfs.generate_model('TestModelR
 
 
 TestModelAbstract = drfs.generate_model('TestModelAbstract.json')
+TestModelForJsonData = drfs.generate_model('TestModelForJsonData.json') 
