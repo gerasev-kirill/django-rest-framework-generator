@@ -1,0 +1,13 @@
+{
+    "name": "TestModelForGeoPoint",
+    "base": "django.db.models.Model",
+    "properties":{
+        "geo_point":{
+            "type": "GeoPoint"
+        },
+        "not_required_geo_point":{
+            "type": "GeoPoint",
+            "required": false
+        }
+    }
+}

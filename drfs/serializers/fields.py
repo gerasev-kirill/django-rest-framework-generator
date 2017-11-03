@@ -53,6 +53,8 @@ class JSONField(fields.JSONField):
         return value
 
 
+
+
 class ListField(fields.JSONField):
     def to_representation(self, value):
         if self.binary:
@@ -96,3 +98,48 @@ class ListField(fields.JSONField):
         except:
             raise serializers.ValidationError('Invalid Array')
         return value
+
+
+
+
+
+class GeoPoint(JSONField):
+    custom_error_messages = {
+        'no_lat_lng': "Please provide 'lat' and 'lng' value. Ex.: {'lat': 0.3, 'lng': 32.122}",
+        'invalid_lat_lng_type': "Invalid type for property '{field}'. Expected <type 'int'> or <type 'float'>, got {type}",
+        'invalid_text_type': "Invalid type for property 'text'. Expected <type 'str'>, got {type}"
+    }
+    def __init__(self, *args, **kwargs):
+        super(GeoPoint, self).__init__(*args, **kwargs)
+
+        def geo_point_validator(value):
+            if not value and not self.required:
+                return
+            if not isinstance(value, dict):
+                raise serializers.ValidationError(self.default_error_messages['invalid'])
+            if 'lat' not in value or 'lng' not in value:
+                raise serializers.ValidationError(self.custom_error_messages['no_lat_lng'])
+            if not isinstance(value['lat'], (int, long, float)) or isinstance(value['lat'], bool):
+                raise serializers.ValidationError(self.custom_error_messages['invalid_lat_lng_type'].format(
+                    field='lat',
+                    type=type(value['lat'])
+                ))
+            if not isinstance(value['lng'], (int, long, float)) or isinstance(value['lng'], bool):
+                raise serializers.ValidationError(self.custom_error_messages['invalid_lat_lng_type'].format(
+                    field='lng',
+                    type=type(value['lng'])
+                ))
+            if 'text' in value and not isinstance(value['text'], six.text_type):
+                raise serializers.ValidationError(self.custom_error_messages['invalid_text_type'].format(
+                    type=type(value['text'])
+                ))
+
+            # clean up value
+            keys_to_remove = [
+                k
+                for k in value if k not in ['lat', 'lng', 'text']
+            ]
+            for k in keys_to_remove:
+                del value[k]
+
+        self.validators.append(geo_point_validator)

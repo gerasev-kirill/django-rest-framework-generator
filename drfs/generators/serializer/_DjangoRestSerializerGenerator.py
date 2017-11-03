@@ -106,6 +106,12 @@ class DjangoRestSerializerGenerator(BaseSerializerGenerator):
             serializer_kwargs['read_only'] = params.get('read_only', False)
             if not serializer_kwargs['required']:
                 serializer_kwargs['allow_null'] = True
+        if params.get('type', None) == 'GeoPoint':
+            serializer_class = drfs_field_serializers.GeoPoint
+            serializer_kwargs['required'] = params.get('required', True)
+            serializer_kwargs['read_only'] = params.get('read_only', False)
+            if not serializer_kwargs['required']:
+                serializer_kwargs['allow_null'] = True
         return serializer_class, serializer_args, serializer_kwargs
 
     def to_serializer(self):

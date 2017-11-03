@@ -56,6 +56,8 @@ class DjangoOrmModelGenerator(BaseModelGenerator):
         'bool': django_fields.BooleanField,
         'array': drfs_fields.ListField,
 
+        'GeoPoint': drfs_fields.GeoPoint,
+
         'belongsTo': django_models.ForeignKey,
         'hasOne': django_models.OneToOneField,
         'hasMany': django_models.ManyToManyField,
