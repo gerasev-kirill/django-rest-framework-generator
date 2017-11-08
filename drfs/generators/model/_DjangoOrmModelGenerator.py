@@ -53,6 +53,7 @@ class DjangoOrmModelGenerator(BaseModelGenerator):
         'object': JSONField,
         'date': django_fields.DateField,
         'datetime': django_fields.DateTimeField,
+        'time': django_fields.TimeField,
         'bool': django_fields.BooleanField,
         'array': drfs_fields.ListField,
 
@@ -142,6 +143,8 @@ class DjangoOrmModelGenerator(BaseModelGenerator):
             field_kwargs['blank'] = True
         if 'null' not in field_kwargs:
             field_kwargs['null'] = True
+        if params.get('relationName', None):
+            field_kwargs['related_name'] = params['relationName']
 
         to_model = self.get_model_class(params['model'])
         field_args = (to_model,)
