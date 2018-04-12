@@ -1,4 +1,4 @@
-import os, six
+import os, sys
 from setuptools import setup
 
 README = open(os.path.join(os.path.dirname(__file__), 'README.rst')).read()
@@ -6,7 +6,7 @@ README = open(os.path.join(os.path.dirname(__file__), 'README.rst')).read()
 # allow setup.py to be run from any path
 os.chdir(os.path.normpath(os.path.join(os.path.abspath(__file__), os.pardir)))
 
-if six.PY2:
+if sys.version_info[0] == 2:
     dmc_module = 'django-model-changes==0.15'
 else:
     dmc_module = 'django-model-changes-py3==0.14.1'
