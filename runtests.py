@@ -8,6 +8,7 @@ settings.configure(
         DATABASES={
             'default': {
                 'ENGINE': 'django.db.backends.sqlite3',
+                'NAME': os.path.join(os.path.dirname(__file__), 'db.sqlite3'),
             }
         },
         BASE_DIR=BASE_DIR,
@@ -40,7 +41,7 @@ except ImportError:
     from django.test.runner import DiscoverRunner
     test_runner = DiscoverRunner(verbosity=1)
 
-#failures = test_runner.run_tests(['tests.test_geo_point'])
+#failures = test_runner.run_tests(['tests.test_embedded_models'])
 failures = test_runner.run_tests(['tests'])
 if failures:
     sys.exit(failures)

@@ -1,0 +1,15 @@
+{
+    "name": "EmbeddedTestModel2",
+    "properties": {
+        "estring2":{
+            "type": "string",
+            "required": false
+        },
+        "eint2":{
+            "type": "int",
+            "required": true,
+            "default": 90,
+            "min": 0
+        }
+    }
+}

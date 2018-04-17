@@ -4,6 +4,7 @@ from django.db import models as django_models
 from django.conf import settings as django_settings
 from django.dispatch import receiver
 from jsonfield import JSONField
+import os, json
 
 from ._BaseModelGenerator import BaseModelGenerator
 from ... import helpers
@@ -62,7 +63,8 @@ class DjangoOrmModelGenerator(BaseModelGenerator):
         'belongsTo': django_models.ForeignKey,
         'hasOne': django_models.OneToOneField,
         'hasMany': django_models.ManyToManyField,
-        'embedsMany': drfs_fields.ListField
+        'embedsMany': drfs_fields.EmbeddedManyModel,
+        'embedsOne': drfs_fields.EmbeddedOneModel
     }
 
     def get_model_class(self, model_path):
@@ -179,13 +181,15 @@ class DjangoOrmModelGenerator(BaseModelGenerator):
 
     def build_field__embedsMany(self, name, params):
         field_class, field_args, field_kwargs = self.build_field(name, params)
+        field_kwargs['embedded_model_name'] = params['model']
         if 'default' not in field_kwargs:
             field_kwargs['default'] = []
+        return field_class, field_args, field_kwargs
 
-        to_model = self.get_model_class(params['model'])
-        REGISTERED_RECEIVERS[self.model_name] = REGISTERED_RECEIVERS.get(self.model_name, {})
-        REGISTERED_RECEIVERS[self.model_name]['delete_hasMany'] = \
-            REGISTERED_RECEIVERS[self.model_name].get('delete_hasMany', {})
 
-        REGISTERED_RECEIVERS[self.model_name]['delete_hasMany'][name] = to_model
+    def build_field__embedsOne(self, name, params):
+        field_class, field_args, field_kwargs = self.build_field(name, params)
+        field_kwargs['embedded_model_name'] = params['model']
+        if 'default' not in field_kwargs:
+            field_kwargs['default'] = {}
         return field_class, field_args, field_kwargs

@@ -143,3 +143,61 @@ class GeoPoint(JSONField):
                 del value[k]
 
         self.validators.append(geo_point_validator)
+
+
+
+class EmbeddedOneModel(JSONField):
+    embedded_validator = None
+
+    def __init__(self, *args, **kwargs):
+        from drfs.db.embedded_validator import EmbeddedValidator
+        if 'embedded_model_name' in kwargs:
+            self.embedded_validator = EmbeddedValidator(
+                kwargs['embedded_model_name'],
+                params=kwargs.get('embedded_params', None)
+            )
+            del kwargs['embedded_model_name']
+            del kwargs['embedded_params']
+
+        super(EmbeddedOneModel, self).__init__(*args, **kwargs)
+
+        def validator(data):
+            if not self.embedded_validator:
+                return True
+            validated = self.embedded_validator.validate_data(data)
+            if data:
+                for k,v in validated.items():
+                    data[k] = v
+                for k,v in data.items():
+                    if k not in data:
+                        del data[k]
+            return True
+
+        self.validators.append(validator)
+
+
+class EmbeddedManyModel(ListField):
+    embedded_validator = None
+
+    def __init__(self, *args, **kwargs):
+        from drfs.db.embedded_validator import EmbeddedValidator
+        if 'embedded_model_name' in kwargs:
+            self.embedded_validator = EmbeddedValidator(
+                kwargs['embedded_model_name'],
+                params=kwargs.get('embedded_params', None)
+            )
+            del kwargs['embedded_model_name']
+            del kwargs['embedded_params']
+
+        super(EmbeddedManyModel, self).__init__(*args, **kwargs)
+
+        def validator(data):
+            if not self.embedded_validator:
+                return True
+            i = 0
+            for item in data or []:
+                data[i] = self.embedded_validator.validate_data(item)
+                i += 1
+            return True
+
+        self.validators.append(validator)

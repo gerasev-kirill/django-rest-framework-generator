@@ -26,6 +26,7 @@ setup(
         'djangorestframework',
         'Pillow>=4.2.1',
         'jsonfield',
+        'schema>=0.6.7',
         dmc_module
     ],
     classifiers=[

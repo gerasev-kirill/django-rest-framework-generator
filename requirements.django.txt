@@ -8,3 +8,4 @@ Pillow>=4.2.1
 git+https://github.com/gerasev-kirill/django-gcloud-storage.git
 djangorestframework-filters==0.10.1
 django-model-changes==0.15
+schema==0.6.7

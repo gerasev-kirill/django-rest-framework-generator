@@ -1,0 +1,39 @@
+{
+    "name": "TestModelWithEmbeddedOne",
+    "base": "django.db.models.Model",
+    "properties":{
+        "datetime_field":{
+            "type": "datetime",
+            "auto_now_add": true
+        },
+        "int_field":{
+            "type": "int",
+            "default": 20,
+            "max": 90,
+            "min": 3,
+            "description": "My int field"
+        },
+        "string_field":{
+            "type": "string",
+            "default": "Hello test string",
+            "max": 20,
+            "min": 10
+        },
+        "bool_field":{
+            "type": "bool",
+            "default": false
+        }
+    },
+    "relations":{
+        "one_embedded": {
+            "type": "embedsOne",
+            "model": "EmbeddedTestModel",
+            "required": false
+        },
+        "many_embedded": {
+            "type": "embedsMany",
+            "model": "EmbeddedTestModel",
+            "default": []
+        }
+    }
+}

@@ -1,0 +1,22 @@
+{
+    "name": "EmbeddedTestModel",
+    "properties": {
+        "estring":{
+            "type": "string",
+            "required": false
+        },
+        "eint":{
+            "type": "int",
+            "required": true,
+            "default": 90,
+            "min": 0
+        }
+    },
+    "relations":{
+        "one_embedded2":{
+            "type": "embedsOne",
+            "model": "EmbeddedTestModel2",
+            "required": false
+        }
+    }
+}

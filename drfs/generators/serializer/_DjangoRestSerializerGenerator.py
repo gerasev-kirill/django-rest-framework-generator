@@ -29,10 +29,11 @@ class SoftPrimaryKeyRelatedField(rest_relations.PrimaryKeyRelatedField):
 class DjangoRestSerializerGenerator(BaseSerializerGenerator):
     serializer_field_mapping = {
         drfs_fields.ListField: drfs_field_serializers.ListField,
-        drfs_fields.JSONField: drfs_field_serializers.JSONField
+        drfs_fields.JSONField: drfs_field_serializers.JSONField,
+        drfs_fields.EmbeddedOneModel: drfs_field_serializers.EmbeddedOneModel
     }
     default_serializer_class = rest_serializers.ModelSerializer
-    model_relation_types = ['belongsTo', 'hasOne', 'hasMany', 'embedsMany']
+    model_relation_types = ['belongsTo', 'hasOne', 'hasMany', 'embedsOne', 'embedsMany']
 
 
     def get_model_class(self, model_path):
@@ -42,21 +43,32 @@ class DjangoRestSerializerGenerator(BaseSerializerGenerator):
 
 
     def build_relational_serializer__embedsMany(self, django_field, params):
-        serializer_args = []
         serializer_kwargs = {
             'help_text': getattr(django_field, 'help_text', ''),
-            'many': True
+            'embedded_model_name': params['model'],
+            'embedded_params': params
         }
-        to_model = self.get_model_class(params['model'])
-        from drfs import generate_serializer
+        if 'default' in params:
+            serializer_kwargs['default'] = params['default']
+        if not params.get('required', True):
+            serializer_kwargs['required'] = False
+            serializer_kwargs['allow_null'] = True
+        return drfs_field_serializers.EmbeddedManyModel, [], serializer_kwargs
 
-        BaseEmbeddedSerializer = generate_serializer(to_model)
-        class EmbedsManySerializer(BaseEmbeddedSerializer):
-            id = rest_serializers.SerializerMethodField()
-            def get_id(self, obj):
-                return obj
 
-        return EmbedsManySerializer, serializer_args, serializer_kwargs
+    def build_relational_serializer__embedsOne(self, django_field, params):
+        serializer_kwargs = {
+            'help_text': getattr(django_field, 'help_text', ''),
+            'embedded_model_name': params['model'],
+            'embedded_params': params
+        }
+        if 'default' in params:
+            serializer_kwargs['default'] = params['default']
+        if not params.get('required', True):
+            serializer_kwargs['required'] = False
+            serializer_kwargs['allow_null'] = True
+        return drfs_field_serializers.EmbeddedOneModel, [], serializer_kwargs
+
 
     def build_relational_serializer(self, django_field, params):
         _params = params.get('_serializer', None)
