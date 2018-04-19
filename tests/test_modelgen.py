@@ -30,8 +30,15 @@ class Model(TestCase):
             modelJson = json.load(f)
         opts = modelClass._meta
 
+        hidden = [
+            "id",
+            "TestModelWithRelations_Flat_by_hasOne",
+            "TestModelWithRelations_Flat_by_hasMany",
+            "TestModelWithRelations_Nested_by_hasOne",
+            "TestModelWithRelations_Nested_by_hasMany"
+        ]
         for field in opts.get_fields():
-            if field.name in ['id', 'testmodelwithrelations_flat', 'testmodelwithrelations_nested']:
+            if field.name in hidden:
                 continue
             test_field(
                 field,

@@ -1,4 +1,6 @@
 import schema, os, json
+from django.core.exceptions import ValidationError
+
 
 def load_embedded_model(name):
     from django.apps import apps
@@ -45,6 +47,7 @@ class EmbeddedValidator:
     }
 
     def __init__(self, model_name, params={}):
+        self.model_name = model_name
         self.model_data = load_embedded_model(model_name)
         if not self.model_data:
             raise ValueError(self.errors['no_such_embedded_model'].format(
@@ -122,4 +125,19 @@ class EmbeddedValidator:
     def validate_data(self, data):
         if data == None and not self.params.get('required', False):
             return self.params.get('default', None) or None
-        return self.schema.validate(data)
+        try:
+            return self.schema.validate(data)
+        except Exception as e:
+            raise ValidationError(str(e))
+
+    def __call__(self, data):
+        if data == None and not self.params.get('required', False):
+            return True
+        try:
+            self.schema.validate(data)
+        except Exception as e:
+            raise ValidationError(str(e))
+        return True
+
+    def deconstruct(self):
+        return 'drfs.db.validators.EmbeddedValidator', [self.model_name], {}

@@ -14,6 +14,7 @@
         "has_one":{
             "type": "hasOne",
             "model": "TestModel",
+            "relationName": "TestModelWithRelations_Nested_by_hasOne",
             "_serializer":{
                 "visible_fields": ["id", "string_field"]
             }
@@ -21,6 +22,7 @@
         "has_many":{
             "type": "hasMany",
             "model": "TestModel",
+            "relationName": "TestModelWithRelations_Nested_by_hasMany",
             "_serializer":{
                 "visible_fields": ["id", "string_field", "int_field"]
             }

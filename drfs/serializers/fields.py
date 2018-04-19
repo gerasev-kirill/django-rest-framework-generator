@@ -150,7 +150,7 @@ class EmbeddedOneModel(JSONField):
     embedded_validator = None
 
     def __init__(self, *args, **kwargs):
-        from drfs.db.embedded_validator import EmbeddedValidator
+        from drfs.db.validators import EmbeddedValidator
         if 'embedded_model_name' in kwargs:
             self.embedded_validator = EmbeddedValidator(
                 kwargs['embedded_model_name'],
@@ -180,7 +180,7 @@ class EmbeddedManyModel(ListField):
     embedded_validator = None
 
     def __init__(self, *args, **kwargs):
-        from drfs.db.embedded_validator import EmbeddedValidator
+        from drfs.db.validators import EmbeddedValidator
         if 'embedded_model_name' in kwargs:
             self.embedded_validator = EmbeddedValidator(
                 kwargs['embedded_model_name'],

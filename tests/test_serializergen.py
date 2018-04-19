@@ -18,8 +18,11 @@ class Serializer(TestCase):
         )
 
         fields = [
-            "id", "testmodelwithrelations_flat", "testmodelwithrelations_flat",
-            "testmodelwithrelations_nested", "testmodelwithrelations_nested"
+            "id",
+            "TestModelWithRelations_Flat_by_hasOne",
+            "TestModelWithRelations_Flat_by_hasMany",
+            "TestModelWithRelations_Nested_by_hasOne",
+            "TestModelWithRelations_Nested_by_hasMany"
         ] + modelJson['properties'].keys()
 
         serializer_fields = opts.fields
@@ -37,12 +40,14 @@ class Serializer(TestCase):
             UserModel
         )
         fields = [
-            u'auth_token', 'testmodelwithowner', 'testmodelralationbelongsto',
+            u'auth_token', 'testmodelwithowner',
+            'testmodelwithrelations_flat', 'testmodelwithrelations_nested',
+            'testmodelralationbelongsto',
             'testmodelralationbelongsto_withignore404object',
+            'testmodelralationhasone',
             u'id', 'password', 'last_login',
             'is_superuser', 'username', 'first_name', 'last_name', 'email',
             'is_staff', 'is_active', 'date_joined', 'groups', 'user_permissions',
-            'testmodelwithrelations_flat', 'testmodelwithrelations_nested',
         ]
         serializer_fields = opts.fields
 
@@ -66,7 +71,13 @@ class Serializer(TestCase):
     def test_hidden_fields(self):
         serializerClass = drfs.generate_serializer(
             'TestModel.json',
-            hidden_fields = ['int_field', 'string_field', 'testmodelwithrelations_flat', 'testmodelwithrelations_nested']
+            hidden_fields = [
+                "int_field", "string_field",
+                "TestModelWithRelations_Flat_by_hasOne",
+                "TestModelWithRelations_Flat_by_hasMany",
+                "TestModelWithRelations_Nested_by_hasOne",
+                "TestModelWithRelations_Nested_by_hasMany"
+            ]
         )
         opts = serializerClass.Meta
         fields = [

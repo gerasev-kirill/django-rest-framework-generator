@@ -1,7 +1,7 @@
 import json
 from jsonfield import JSONField
 
-from .embedded_validator import EmbeddedValidator
+from .validators import EmbeddedValidator
 
 
 
@@ -21,15 +21,8 @@ class EmbeddedOneModel(JSONField):
             del kwargs['embedded_model_name']
             self.embedded_validator = EmbeddedValidator(self.embedded_model_name)
             kwargs['validators'] = kwargs.get('validators', None) or []
-            kwargs['validators'].append(self._validate_value)
+            kwargs['validators'].append(EmbeddedValidator(self.embedded_model_name))
         super(EmbeddedOneModel, self).__init__(*args, **kwargs)
-
-
-    def _validate_value(self, value):
-        if not self.embedded_validator:
-            return value
-        return self.embedded_validator.validate_data(value)
-
 
     def get_db_prep_value(self, value, connection, prepared=False):
         """Convert JSON object to a string"""
@@ -40,6 +33,7 @@ class EmbeddedOneModel(JSONField):
 
 
 
+
 class EmbeddedManyModel(JSONField):
     def __init__(self, *args, **kwargs):
         if 'embedded_model_name' in kwargs:
@@ -47,7 +41,7 @@ class EmbeddedManyModel(JSONField):
             del kwargs['embedded_model_name']
             self.embedded_validator = EmbeddedValidator(self.embedded_model_name)
             kwargs['validators'] = kwargs.get('validators', None) or []
-            kwargs['validators'].append(self._validate_value)
+            kwargs['validators'].append(EmbeddedValidator(self.embedded_model_name))
         super(EmbeddedManyModel, self).__init__(*args, **kwargs)
 
     def _validate_value(self, value):

@@ -12,11 +12,13 @@
         },
         "has_one":{
             "type": "hasOne",
-            "model": "TestModel"
+            "model": "TestModel",
+            "relationName": "TestModelWithRelations_Flat_by_hasOne"
         },
         "has_many":{
             "type": "hasMany",
-            "model": "TestModel"
+            "model": "TestModel",
+            "relationName": "TestModelWithRelations_Flat_by_hasMany"
         }
     }
 }

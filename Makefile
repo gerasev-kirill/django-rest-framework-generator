@@ -1,6 +1,6 @@
 install_virtualenv:
 	rm -fr .virtualenv/p2 || true
-	virtualenv .virtualenv/p2
+	virtualenv  --system-site-packages .virtualenv/p2
 	chmod +x .virtualenv/p2/bin/activate
 	ln -s .virtualenv/p2/bin/activate ap2 || true
 	bash -c "source ap2; pip2 install -r ./requirements.django.txt"
