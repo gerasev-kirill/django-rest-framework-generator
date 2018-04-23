@@ -38,9 +38,9 @@ class EmbeddedValidator:
         'no_such_embedded_model': "Can't find embedded model {model_name} in your apps! Try to create in any your app file embedded_models.json/{model_name}.json"
     }
     types = {
-        'string': str,
+        'string': lambda x: isinstance(x, (str, unicode)),
         'int': int,
-        'float': float,
+        'float': lambda x: isinstance(x, (float, int)),
         'number': float,
         'object': dict,
         'array': list
