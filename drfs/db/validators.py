@@ -77,10 +77,14 @@ class EmbeddedValidator:
             validators.append(self.types[params['type']])
 
         field = field_name
-        if 'default' in params:
+        if 'default' in params and params['default'] != None:
             field = schema.Optional(field, default=params['default'])
         elif not is_required:
             field = schema.Optional(field)
+            if validators:
+                validators = [
+                    lambda x: isinstance(x, self.types[params['type']]) or x == None
+                ]
 
         if params['type'] in ['int', 'float', 'number']:
             if 'min' in params:
@@ -113,7 +117,6 @@ class EmbeddedValidator:
                 validators.append(lambda x: x in choices)
             else:
                 validators.append(lambda x: (x in choices) or x == None)
-
 
         if params['type'] == 'embedsOne':
             validator = EmbeddedValidator(params['model'], params=params)
