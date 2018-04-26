@@ -15,6 +15,7 @@ class GeoPoint(JSONField):
 
 
 class EmbeddedOneModel(JSONField):
+    embedded_validator = None
     def __init__(self, *args, **kwargs):
         if 'embedded_model_name' in kwargs:
             self.embedded_model_name = kwargs['embedded_model_name']
@@ -28,13 +29,15 @@ class EmbeddedOneModel(JSONField):
         """Convert JSON object to a string"""
         if self.null and value is None:
             return None
-        value = self.embedded_validator.validate_data(value)
+        if self.embedded_validator:
+            value = self.embedded_validator.validate_data(value)
         return json.dumps(value, **self.dump_kwargs)
 
 
 
 
 class EmbeddedManyModel(JSONField):
+    embedded_validator = None
     def __init__(self, *args, **kwargs):
         if 'embedded_model_name' in kwargs:
             self.embedded_model_name = kwargs['embedded_model_name']
@@ -57,5 +60,6 @@ class EmbeddedManyModel(JSONField):
         """Convert JSON object to a string"""
         if self.null and value is None:
             return None
-        value = self._validate_value(value)
+        if self.embedded_validator:
+            value = self._validate_value(value)
         return json.dumps(value, **self.dump_kwargs)
