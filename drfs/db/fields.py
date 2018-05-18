@@ -1,5 +1,6 @@
 import json
 from jsonfield import JSONField
+from rest_framework.serializers import CharField
 
 from .validators import EmbeddedValidator
 
@@ -12,7 +13,8 @@ class ListField(JSONField):
 class GeoPoint(JSONField):
     pass
 
-
+class TimeZoneSerializer(CharField):
+    pass
 
 class EmbeddedOneModel(JSONField):
     embedded_validator = None

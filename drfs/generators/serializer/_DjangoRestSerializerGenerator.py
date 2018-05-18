@@ -10,6 +10,10 @@ from ...serializers import fields as drfs_field_serializers
 from ...db import fields as drfs_fields
 from ... import helpers
 
+try:
+    from timezone_field import TimeZoneField
+except ImportError:
+    TimeZoneField = None
 
 
 class SoftPrimaryKeyRelatedField(rest_relations.PrimaryKeyRelatedField):
@@ -32,6 +36,8 @@ class DjangoRestSerializerGenerator(BaseSerializerGenerator):
         drfs_fields.JSONField: drfs_field_serializers.JSONField,
         drfs_fields.EmbeddedOneModel: drfs_field_serializers.EmbeddedOneModel
     }
+    if TimeZoneField:
+        serializer_field_mapping[TimeZoneField] = drfs_fields.TimeZoneSerializer
     default_serializer_class = rest_serializers.ModelSerializer
     model_relation_types = ['belongsTo', 'hasOne', 'hasMany', 'embedsOne', 'embedsMany']
 
