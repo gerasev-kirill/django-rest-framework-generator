@@ -17,6 +17,10 @@
             "type": "embedsOne",
             "model": "EmbeddedTestModel2",
             "required": false
+        },
+        "many_embedded2":{
+            "type": "embedsMany",
+            "model": "EmbeddedTestModel2"
         }
     }
 }

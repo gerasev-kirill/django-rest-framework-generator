@@ -38,12 +38,14 @@ class EmbeddedValidator:
         'no_such_embedded_model': "Can't find embedded model {model_name} in your apps! Try to create in any your app file embedded_models.json/{model_name}.json"
     }
     types = {
-        'string': lambda x: isinstance(x, (str, unicode)),
+        'string': (str, unicode),
         'int': int,
-        'float': lambda x: isinstance(x, (float, int)),
+        'float': (float, int),
         'number': float,
         'object': dict,
-        'array': list
+        'array': list,
+        'bool': bool,
+        'GeoPoint': dict
     }
 
     def __init__(self, model_name, params={}):
@@ -73,8 +75,10 @@ class EmbeddedValidator:
         if not params.get('required', False):
             is_required = False
 
-        if params['type'] in self.types:
-            validators.append(self.types[params['type']])
+        if params['type'] != 'any' and params['type'] in self.types:
+            validators.append(
+                lambda x: isinstance(x, self.types[params['type']])
+            )
 
         field = field_name
         if 'default' in params and params['default'] != None:
@@ -121,6 +125,26 @@ class EmbeddedValidator:
         if params['type'] == 'embedsOne':
             validator = EmbeddedValidator(params['model'], params=params)
             validators = validator.schema
+
+        if params['type'] == 'embedsMany':
+            validator = EmbeddedValidator(params['model'], params=params)
+            def embeds_many_validate(value):
+                if not is_required and value == None:
+                    return None
+                if not isinstance(value, (list, dict)):
+                    return False
+                if isinstance(value, list):
+                    for v in value:
+                        validator.validate_data(v)
+                elif isinstance(value, dict):
+                    try:
+                        validator.validate_data(value)
+                    except Exception as e:
+                        print params['type'], field_name, params['model']
+                        raise schema.SchemaError("Invalid field '%s': %s" % (field_name, str(e)))
+                return value
+
+            validators = [embeds_many_validate]
 
         return field, validators
 
