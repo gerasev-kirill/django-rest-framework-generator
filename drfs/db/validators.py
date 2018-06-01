@@ -97,9 +97,21 @@ class EmbeddedValidator:
                 validators.append(lambda x: x <= params['max'])
         if params['type'] in ['string']:
             if 'min' in params:
-                validators.append(lambda x: len(x or '') >= params['min'])
+                validators.append(schema.Use(
+                    lambda x: len(x or '') >= params['min'],
+                    error="Field '{field_name}' value is too small. Required {min} chars".format(
+                        field_name=field_name,
+                        max=params['min']
+                    )
+                ))
             if 'max' in params:
-                validators.append(lambda x: len(x or '') <= params['max'])
+                validators.append(schema.Use(
+                    lambda x: len(x or '') <= params['max'],
+                    error="Field '{field_name}' value is too long. Allowed max {max} chars".format(
+                        field_name=field_name,
+                        max=params['max']
+                    )
+                ))
 
         if params['type'] == 'object':
             if is_required:
@@ -118,9 +130,21 @@ class EmbeddedValidator:
                 for c in fix_choices(params['choices'])
             ]
             if is_required:
-                validators.append(lambda x: x in choices)
+                validators.append(schema.Use(
+                    lambda x: x in choices,
+                    error="Key '{field_name}' value not in choices: {choices}".format(
+                        field_name=field_name,
+                        choices=choices
+                    )
+                ))
             else:
-                validators.append(lambda x: (x in choices) or x == None)
+                validators.append(schema.Use(
+                    lambda x: (x in choices) or x == None,
+                    error="Key '{field_name}' value not in choices: {choices}".format(
+                        field_name=field_name,
+                        choices=choices
+                    )
+                ))
 
         if params['type'] == 'embedsOne':
             validator = EmbeddedValidator(params['model'], params=params)
@@ -140,7 +164,7 @@ class EmbeddedValidator:
                     try:
                         validator.validate_data(value)
                     except Exception as e:
-                        print params['type'], field_name, params['model']
+                        # print 'invalid', params['type'], field_name, params['model'], str(e)
                         raise schema.SchemaError("Invalid field '%s': %s" % (field_name, str(e)))
                 return value
 
