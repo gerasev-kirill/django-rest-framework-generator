@@ -1,5 +1,9 @@
-from ... import helpers
 from django_model_changes import ChangesMixin
+import os
+
+from ... import helpers
+
+
 
 
 
@@ -15,13 +19,26 @@ class BaseModelGenerator(object):
     default_model_class = None
 
 
-    def __init__(self, model_definition, module_name, **kwargs):
+    def __init__(self, model_definition, module_name, model_path=None, **kwargs):
         model_name = model_definition.get('name', None)
         if not model_name:
             raise "DRFS - generators: Please provide model name field 'name' in  model definition"
         self.model_definition = model_definition
         self.model_name = str(model_name)
         self.module_name = str(module_name)
+        self.mixin_path = None
+        if model_path:
+            mixin_path = os.path.dirname(os.path.dirname(model_path))
+            if os.path.isfile(os.path.join(mixin_path, 'model_mixins', self.model_name + '.py')):
+                from django.conf import settings
+                mixin_path = mixin_path.replace(settings.BASE_DIR, '')
+                mixin_path = '.'.join(mixin_path.split('/'))
+                if mixin_path[0] == '.':
+                    mixin_path = mixin_path[1:]
+                self.mixin_path = "{mixin_path}.model_mixins.{model_name}.ModelMixin".format(
+                    model_name=self.model_name,
+                    mixin_path=mixin_path
+                )
 
 
     def get_model_class(self, model_path):
@@ -68,14 +85,26 @@ class BaseModelGenerator(object):
         base_class = helpers.import_class(
             self.model_definition.get('base', self.default_model_class)
         )
+        mixin = None
+        if self.mixin_path:
+            try:
+                mixin = helpers.import_class(self.mixin_path)
+            except ImportError:
+                mixin = None
 
         if self.model_definition.get('options', {}).get('abstract', False):
             fields['Meta'] = MetaAbstract
-            model_cls = type(self.model_name, (base_class,), fields)
+            if mixin:
+                model_cls = type(self.model_name, (mixin, base_class), fields)
+            else:
+                model_cls = type(self.model_name, (base_class,), fields)
             model_cls._meta.abstract = True
             return model_cls
 
         fields['Meta'] = MetaNoAbstract
-        model_cls = type(self.model_name, (ChangesMixin, base_class), fields)
+        if mixin:
+            model_cls = type(self.model_name, (mixin, ChangesMixin, base_class), fields)
+        else:
+            model_cls = type(self.model_name, (ChangesMixin, base_class), fields)
         setattr(model_cls, 'DRFS_MODEL_DEFINITION', self.model_definition)
         return model_cls

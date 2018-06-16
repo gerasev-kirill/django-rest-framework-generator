@@ -45,6 +45,22 @@ class Model(TestCase):
                 modelJson['properties'][field.name]
             )
 
+        # test mixin for model
+        instance = modelClass.objects.create(string_field="test")
+        self.assertEqual(
+            instance.string_field,
+            'test'
+        )
+        instance.save(my_prop="world!")
+        self.assertEqual(
+            instance.string_field,
+            'world!'
+        )
+        self.assertEqual(
+            instance.say_hello(),
+            "hello %s" % instance.id
+        )
+
     def test_abstract(self):
         TestModelAbstract = drfs.generate_model('TestModelAbstract.json')
         self.assertEqual(

@@ -77,7 +77,7 @@ def generate_model(path):
     else:
         from .generators.model import DjangoOrmModelGenerator
         MODEL_GENERATOR_CLASS = DjangoOrmModelGenerator
-    converter = MODEL_GENERATOR_CLASS(definition, module_name)
+    converter = MODEL_GENERATOR_CLASS(definition, module_name, model_path=path)
     return converter.to_django_model()
 
 
