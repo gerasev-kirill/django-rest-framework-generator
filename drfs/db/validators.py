@@ -97,7 +97,7 @@ class EmbeddedValidator:
                 validators.append(lambda x: x <= params['max'])
         if params['type'] in ['string']:
             if 'min' in params:
-                validators.append(schema.Use(
+                validators.append(schema.And(
                     lambda x: len(x or '') >= params['min'],
                     error="Field '{field_name}' value is too small. Required {min} chars".format(
                         field_name=field_name,
@@ -105,7 +105,7 @@ class EmbeddedValidator:
                     )
                 ))
             if 'max' in params:
-                validators.append(schema.Use(
+                validators.append(schema.And(
                     lambda x: len(x or '') <= params['max'],
                     error="Field '{field_name}' value is too long. Allowed max {max} chars".format(
                         field_name=field_name,
@@ -130,7 +130,7 @@ class EmbeddedValidator:
                 for c in fix_choices(params['choices'])
             ]
             if is_required:
-                validators.append(schema.Use(
+                validators.append(schema.And(
                     lambda x: x in choices,
                     error="Key '{field_name}' value not in choices: {choices}".format(
                         field_name=field_name,
@@ -138,7 +138,7 @@ class EmbeddedValidator:
                     )
                 ))
             else:
-                validators.append(schema.Use(
+                validators.append(schema.And(
                     lambda x: (x in choices) or x == None,
                     error="Key '{field_name}' value not in choices: {choices}".format(
                         field_name=field_name,
