@@ -2,8 +2,7 @@ from rest_framework import serializers, fields
 from django.utils import six
 import json
 
-
-
+FLOAT_TYPES = tuple([float] + list(six.integer_types))
 
 
 
@@ -109,6 +108,7 @@ class GeoPoint(JSONField):
         'invalid_lat_lng_type': "Invalid type for property '{field}'. Expected <type 'int'> or <type 'float'>, got {type}",
         'invalid_text_type': "Invalid type for property 'text'. Expected <type 'str'>, got {type}"
     }
+
     def __init__(self, *args, **kwargs):
         super(GeoPoint, self).__init__(*args, **kwargs)
 
@@ -119,12 +119,12 @@ class GeoPoint(JSONField):
                 raise serializers.ValidationError(self.default_error_messages['invalid'])
             if 'lat' not in value or 'lng' not in value:
                 raise serializers.ValidationError(self.custom_error_messages['no_lat_lng'])
-            if not isinstance(value['lat'], (int, long, float)) or isinstance(value['lat'], bool):
+            if not isinstance(value['lat'], FLOAT_TYPES) or isinstance(value['lat'], bool):
                 raise serializers.ValidationError(self.custom_error_messages['invalid_lat_lng_type'].format(
                     field='lat',
                     type=type(value['lat'])
                 ))
-            if not isinstance(value['lng'], (int, long, float)) or isinstance(value['lng'], bool):
+            if not isinstance(value['lng'], FLOAT_TYPES) or isinstance(value['lng'], bool):
                 raise serializers.ValidationError(self.custom_error_messages['invalid_lat_lng_type'].format(
                     field='lng',
                     type=type(value['lng'])

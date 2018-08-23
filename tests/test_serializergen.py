@@ -23,7 +23,7 @@ class Serializer(TestCase):
             "TestModelWithRelations_Flat_by_hasMany",
             "TestModelWithRelations_Nested_by_hasOne",
             "TestModelWithRelations_Nested_by_hasMany"
-        ] + modelJson['properties'].keys()
+        ] + list(modelJson['properties'].keys())
 
         serializer_fields = opts.fields
         fields.sort()
@@ -59,11 +59,11 @@ class Serializer(TestCase):
     def test_visible_fields(self):
         serializerClass = drfs.generate_serializer(
             'TestModel.json',
-            visible_fields = ['int_field', 'string_field']
+            visible_fields=['int_field', 'string_field']
         )
         opts = serializerClass.Meta
         self.assertEqual(
-            opts.fields,
+            sorted(opts.fields),
             ['int_field', 'string_field']
         )
 
@@ -71,7 +71,7 @@ class Serializer(TestCase):
     def test_hidden_fields(self):
         serializerClass = drfs.generate_serializer(
             'TestModel.json',
-            hidden_fields = [
+            hidden_fields=[
                 "int_field", "string_field",
                 "TestModelWithRelations_Flat_by_hasOne",
                 "TestModelWithRelations_Flat_by_hasMany",
@@ -97,8 +97,8 @@ class Serializer(TestCase):
             "You cant use both visible_fields and hidden_fields options with model 'TestModel'",
             drfs.generate_serializer,
             'TestModel.json',
-            hidden_fields = ['int_field', 'string_field'],
-            visible_fields = ['int_field']
+            hidden_fields=['int_field', 'string_field'],
+            visible_fields=['int_field']
         )
 
 
@@ -106,8 +106,8 @@ class Serializer(TestCase):
         serializerClass = drfs.generate_serializer('TestModelSerializerHiddenFields.json')
         opts = serializerClass.Meta
         self.assertEqual(
-            opts.fields,
-            [u'id', u'array_field', u'datetime_field', u'bool_field']
+            sorted(opts.fields),
+            ['array_field', 'bool_field', 'datetime_field', 'id']
         )
 
 
@@ -226,7 +226,7 @@ class Relations(TestCase):
             {
                 'id': instance.pk,
                 'has_one': self.test.pk,
-                'has_many':[o.pk for o in self.test_many],
+                'has_many': [o.pk for o in self.test_many],
                 'belongs_to_field': self.user.pk
             }
         )
@@ -287,12 +287,12 @@ class Relations(TestCase):
             dict(ser.data),
             {
                 'id': instance.pk,
-                'has_one':{
+                'has_one': {
                     'id': self.test.pk,
                     'string_field': 'my string'
                 },
-                'has_many':self.test_many_data,
-                'belongs_to_field':{
+                'has_many': self.test_many_data,
+                'belongs_to_field': {
                     'id': self.user.pk,
                     'username': 'serializer_relations_user',
                     'email': 'serializer_relations_user@mail.com'

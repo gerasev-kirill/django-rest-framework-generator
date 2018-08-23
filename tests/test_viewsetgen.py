@@ -1,7 +1,7 @@
-from django.test import TestCase
-from django.contrib.auth.models import User as UserModel
-from django.db.models.fields.related import ForeignKey
 import drfs, json
+from django.test import TestCase
+from rest_framework.permissions import AllowAny
+
 from . import models
 
 
@@ -26,9 +26,9 @@ class Viewset(TestCase):
         )
         self.assertEqual(
             viewset.filter_backends,
-            tuple([])
+            ()
         )
         self.assertEqual(
             viewset.permission_classes,
-            [drfs.permissions.drf.Everyone]
+            [AllowAny]
         )

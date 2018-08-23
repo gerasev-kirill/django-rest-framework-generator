@@ -1,5 +1,9 @@
 import schema, os, json
+from django.utils import six
 from django.core.exceptions import ValidationError
+
+FLOAT_TYPES = tuple([float] + list(six.integer_types))
+
 
 
 def load_embedded_model(name):
@@ -24,7 +28,7 @@ def fix_choices(choices):
                 for c in choices
             ])
         return tuple([
-            (c,c)
+            (c, c)
             for c in choices
         ])
     return tuple(choices)
@@ -38,9 +42,9 @@ class EmbeddedValidator:
         'no_such_embedded_model': "Can't find embedded model {model_name} in your apps! Try to create in any your app file embedded_models.json/{model_name}.json"
     }
     types = {
-        'string': (str, unicode),
-        'int': int,
-        'float': (float, int),
+        'string': six.string_types,
+        'int': six.integer_types,
+        'float': FLOAT_TYPES,
         'number': float,
         'object': dict,
         'array': list,
@@ -53,7 +57,7 @@ class EmbeddedValidator:
         self.model_data = load_embedded_model(model_name)
         if not self.model_data:
             raise ValueError(self.errors['no_such_embedded_model'].format(
-                model_name = model_name
+                model_name=model_name
             ))
 
         self.schema = {}

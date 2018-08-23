@@ -1,10 +1,3 @@
-import re
-
-
-
-
-
-
 
 
 class AclResolver(object):

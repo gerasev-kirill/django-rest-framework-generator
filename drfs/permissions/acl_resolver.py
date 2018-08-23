@@ -1,5 +1,4 @@
 import re
-from rest_framework import exceptions
 from .acl import EveryoneAclResolver, UnauthenticatedAclResolver, AuthenticatedAclResolver, OwnerAclResolver, AdminAclResolver
 
 
@@ -14,6 +13,7 @@ class PermissionResolver(object):
         '$owner': OwnerAclResolver,
         '$admin': AdminAclResolver
     }
+
     def __init__(self):
         from django.conf import settings
         from ..helpers import import_class

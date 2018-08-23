@@ -222,7 +222,7 @@ class ViewsetAcl(TestCase):
         def test_user(user, apiPoint, expectCode):
             request.user = user
             func = viewset.as_view(apiPoint)
-            p = apiPoint.items()[0][1]
+            p = list(apiPoint.items())[0][1]
             if p in ['list', 'create']:
                 response = func(request)
             else:

@@ -14,9 +14,9 @@ class Model(TestCase):
             field_class = FIELD_MAP[settings['type']]
             if not isinstance(field, field_class):
                 self.fail("Field '"+field.name+"' is not an instance of "+str(field_class))
-            if settings.has_key('default'):
+            if 'default' in settings:
                 self.assertEqual(field.default, settings['default'])
-            if settings.has_key('max'):
+            if 'max' in settings:
                 if settings['type'] in ['string']:
                     self.assertEqual(field.max_length, settings['max'])
             if settings['type'] == 'datetime':
@@ -83,9 +83,10 @@ class Model(TestCase):
             False
         )
         self.assertEqual(
-            field_names,
-            [u'id', u'object_field', u'int_field', u'array_field', u'datetime_field', u'string_field', u'bool_field', u'new_field']
-        )
+            sorted(field_names), [
+            'array_field', 'bool_field', 'datetime_field', 'id', 'int_field',
+            'new_field', 'object_field', 'string_field'
+        ])
 
 
     def test_no_such_file(self):
