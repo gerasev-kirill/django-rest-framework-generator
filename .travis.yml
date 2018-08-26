@@ -14,8 +14,8 @@ install:
   - pip install -r requirements.django-"$TRAVIS_PYTHON_VERSION".txt --quiet
 
 script:
-  - python ./runtests.py
-  - coverage run --source=drfs ./runtests.py
+  - python ./manage.py test
+  - coverage run --source=drfs ./manage.py test
 
 after_success:
   - coveralls

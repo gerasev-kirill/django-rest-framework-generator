@@ -6,7 +6,7 @@ install_virtualenv:
 	bash -c "source ap2; pip2 install -r ./requirements.django-2.7.txt"
 
 run_tests:
-	bash -c "source ap2; python2 ./runtests.py"
+	bash -c "source ap2; python2 ./manage.py test"
 
 install_virtualenv3:
 	rm -fr .virtualenv/p3 || true

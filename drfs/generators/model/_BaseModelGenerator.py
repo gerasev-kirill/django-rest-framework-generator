@@ -33,6 +33,8 @@ class BaseModelGenerator(object):
                 from django.conf import settings
                 mixin_path = mixin_path.replace(settings.BASE_DIR, '')
                 mixin_path = '.'.join(mixin_path.split('/'))
+                if not mixin_path:
+                    mixin_path = os.path.basename(settings.BASE_DIR)
                 if mixin_path[0] == '.':
                     mixin_path = mixin_path[1:]
                 self.mixin_path = "{mixin_path}.model_mixins.{model_name}.ModelMixin".format(
