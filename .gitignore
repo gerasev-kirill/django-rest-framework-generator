@@ -10,3 +10,4 @@ ap3
 !.gitignore
 __pycache__
 *.bak
+!.travis.yml

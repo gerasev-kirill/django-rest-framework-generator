@@ -3,7 +3,7 @@ install_virtualenv:
 	virtualenv  --system-site-packages .virtualenv/p2
 	chmod +x .virtualenv/p2/bin/activate
 	ln -s .virtualenv/p2/bin/activate ap2 || true
-	bash -c "source ap2; pip2 install -r ./requirements.django.txt"
+	bash -c "source ap2; pip2 install -r ./requirements.django-2.7.txt"
 
 run_tests:
 	bash -c "source ap2; python2 ./runtests.py"
@@ -13,7 +13,7 @@ install_virtualenv3:
 	virtualenv .virtualenv/p3
 	chmod +x .virtualenv/p3/bin/activate
 	ln -s .virtualenv/p3/bin/activate ap3 || true
-	bash -c "source ap3; pip3 install -r ./requirements.django3.txt"
+	bash -c "source ap3; pip3 install -r ./requirements.django-3.4.txt"
 
 run_tests3:
 	bash -c "source ap3; python3 ./runtests.py"

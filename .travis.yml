@@ -1,0 +1,21 @@
+language: python
+
+sudo: false
+
+python:
+  - "2.7"
+  - "3.4"
+
+env:
+  - DJANGO_VERSION=1.11.0
+
+install:
+  - travis_retry pip install detox tox-travis coverage coveralls
+  - pip install -r requirements.django-"$TRAVIS_PYTHON_VERSION".txt --quiet
+
+script:
+  - python ./manage.py test
+  - coverage run --source=drfs ./manage.py test
+
+after_success:
+  - coveralls
