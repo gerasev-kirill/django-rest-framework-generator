@@ -80,9 +80,11 @@ class EmbeddedValidator:
             is_required = False
 
         if params['type'] != 'any' and params['type'] in self.types:
-            validators.append(
-                lambda x: isinstance(x, self.types[params['type']])
-            )
+            def validate_by_type(value):
+                if not is_required and value == None:
+                    return True
+                return isinstance(value, self.types[params['type']])
+            validators.append(validate_by_type)
 
         field = field_name
         if 'default' in params and params['default'] != None:
@@ -95,10 +97,18 @@ class EmbeddedValidator:
                 ]
 
         if params['type'] in ['int', 'float', 'number']:
+            def validate_by_size(validationType):
+                def validate(value):
+                    if not is_required and value == None:
+                        return True
+                    return value >= params[validationType]
+                validate.__name__ = 'validate_by_size_' + validationType
+                return validate
             if 'min' in params:
-                validators.append(lambda x: x >= params['min'])
+                validators.append(validate_by_size('min'))
             if 'max' in params:
-                validators.append(lambda x: x <= params['max'])
+                validators.append(validate_by_size('max'))
+
         if params['type'] in ['string']:
             if 'min' in params:
                 validators.append(schema.And(
