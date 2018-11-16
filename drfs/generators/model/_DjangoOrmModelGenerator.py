@@ -86,6 +86,8 @@ class DjangoOrmModelGenerator(BaseModelGenerator):
         if 'required' in params and params['required'] == False:
             field_kwargs['blank'] = True
             field_kwargs['null'] = True
+        if params.get('primary', False):
+            field_kwargs['primary_key'] = True
 
         return field_class, field_args, field_kwargs
 
