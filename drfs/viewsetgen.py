@@ -1,6 +1,7 @@
 from rest_framework import viewsets
 from django.db import models
 from django.conf import settings
+import six
 
 from . import helpers, decorators
 from .permissions.drf import Everyone as AllowEveryone
@@ -71,7 +72,7 @@ class ViewsetGenFactory(type):
                     helpers.import_class(m)
                 )
         if 'add_mixin' in kwargs:
-            if isinstance(kwargs['add_mixin'], (str, unicode)):
+            if isinstance(kwargs['add_mixin'], six.text_type) or isinstance(kwargs['add_mixin'], six.string_types):
                 mixins.append(
                     helpers.import_class(kwargs['add_mixin'])
                 )

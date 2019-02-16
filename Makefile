@@ -13,7 +13,7 @@ install_virtualenv3:
 	virtualenv .virtualenv/p3
 	chmod +x .virtualenv/p3/bin/activate
 	ln -s .virtualenv/p3/bin/activate ap3 || true
-	bash -c "source ap3; pip3 install -r ./requirements.django-3.4.txt"
+	bash -c "source ap3; pip3 install wheel; pip3 install -r ./requirements.django-3.4.txt"
 
 run_tests3:
-	bash -c "source ap3; python3 ./runtests.py"
+	bash -c "source ap3; python3 ./manage.py test"

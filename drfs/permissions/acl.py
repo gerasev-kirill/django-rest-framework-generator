@@ -1,3 +1,5 @@
+import six
+
 
 
 class AclResolver(object):
@@ -26,10 +28,14 @@ class OwnerAclResolver(AclResolver):
         if not request.user.is_authenticated():
             return False
         if hasattr(obj, 'owner'):
+            if isinstance(obj.owner, six.integer_types) or isinstance(obj.owner, six.text_type) or isinstance(obj.owner, six.string_types):
+                return obj.owner == request.user.id
             return obj.owner == request.user
 
-        from django.contrib.auth.models import User
-        if isinstance(obj, User):
+        from django.contrib.auth import get_user_model
+        UserModel = get_user_model()
+
+        if isinstance(obj, UserModel):
             return obj == request.user
         return False
 
@@ -38,4 +44,5 @@ class AdminAclResolver(AclResolver):
     def get_permission(self, request=None, drf={}, **kwargs):
         is_superuser = getattr(request.user, 'is_superuser', False)
         is_staff = getattr(request.user, 'is_staff', False)
-        return is_staff or is_superuser
+        is_admin = getattr(request.user, 'userRole', None) in ['a', 'admin']
+        return is_staff or is_superuser or is_admin

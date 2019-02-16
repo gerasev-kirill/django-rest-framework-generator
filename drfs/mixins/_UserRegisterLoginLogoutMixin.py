@@ -185,6 +185,9 @@ class UserRegisterLoginLogoutMixin(object):
             raise exceptions.NotAcceptable("New password field 'password' required")
 
         tAuth = TokenAuthentication()
-        user, token = tAuth.authenticate(request)
+        try:
+            user, token = tAuth.authenticate(request)
+        except:
+            raise exceptions.NotAcceptable(detail="Unknown user or auth token")
         self.perform_set_password(user, password)
         return Response({})

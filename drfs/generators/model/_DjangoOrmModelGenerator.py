@@ -136,7 +136,7 @@ class DjangoOrmModelGenerator(BaseModelGenerator):
         field_args = (to_model,)
 
         for k,v in params.items():
-            if k=='on_delete':
+            if k in ['on_delete', 'onDelete']:
                 field_kwargs['on_delete'] = getattr(django_models, v)
         return field_class, field_args, field_kwargs
 
@@ -154,7 +154,7 @@ class DjangoOrmModelGenerator(BaseModelGenerator):
         field_args = (to_model,)
 
         for k,v in params.items():
-            if k=='on_delete':
+            if k in ['on_delete', 'onDelete']:
                 field_kwargs['on_delete'] = getattr(django_models, v)
         return field_class, field_args, field_kwargs
 
@@ -171,7 +171,7 @@ class DjangoOrmModelGenerator(BaseModelGenerator):
         to_model = self.get_model_class(params['model'])
         field_args = (to_model,)
 
-        if params.get('on_delete', None) == 'CASCADE':
+        if params.get('on_delete', None) == 'CASCADE' or params.get('onDelete', None) == 'CASCADE':
             REGISTERED_RECEIVERS[self.model_name] = REGISTERED_RECEIVERS.get(self.model_name, {})
             REGISTERED_RECEIVERS[self.model_name]['delete_hasMany'] = \
                 REGISTERED_RECEIVERS[self.model_name].get('delete_hasMany', [])

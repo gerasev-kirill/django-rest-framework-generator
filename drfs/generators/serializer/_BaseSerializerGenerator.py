@@ -95,6 +95,7 @@ class BaseSerializerGenerator(object):
 
     def to_serializer(self):
         fields_serializers = {}
+        serializer_general_params = self.model_definition.get('serializer', None) or self.model_definition.get('viewset', {}).get('serializer', None) or {}
         read_only_fields = []
         modeldef_fields = self.model_definition.get('properties', {}).copy()
         modeldef_fields.update(self.model_definition.get('relations', {}).copy())
@@ -114,6 +115,26 @@ class BaseSerializerGenerator(object):
             if modeldef_fields.get(field.name, {}).get('_serializer', {}).get('read_only', False):
                 read_only_fields.append(field.name)
 
+        for fieldName, field_params in serializer_general_params.get('fields', {}).items():
+            if field_params.get('read_only', False):
+                try:
+                    field = self.model_class._meta.get_field(fieldName)
+                except:
+                    continue
+                read_only_fields.append(fieldName)
+                if fieldName not in self.allowed_fields:
+                    serializer_class, serializer_args, serializer_kwargs = self.build_serializer(field, field_params)
+                    if serializer_class:
+                        self.allowed_fields.append(fieldName)
+                        fields_serializers[field.name] = serializer_class(
+                            *serializer_args,
+                            **serializer_kwargs
+                        )
+
+            if field_params.get('hidden', False) and fieldName in self.allowed_fields:
+                self.allowed_fields.remove(fieldName)
+
+
         meta = {
             'model': self.model_class,
             'fields': self.allowed_fields,
@@ -127,7 +148,7 @@ class BaseSerializerGenerator(object):
                 read_only_fields = meta['read_only_fields']
 
         base_class = []
-        if self.model_definition.get('serializer', {}).get('base', None):
+        if serializer_general_params.get('base', None):
             base_class = [
                 helpers.import_class(c)
                 for c in self.model_definition['serializer']['base']
