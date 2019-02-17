@@ -71,7 +71,7 @@ class ViewsetGenFactory(type):
                 mixins.append(
                     helpers.import_class(m)
                 )
-        if 'add_mixin' in kwargs:
+        if kwargs.get('add_mixin', None):
             if isinstance(kwargs['add_mixin'], six.text_type) or isinstance(kwargs['add_mixin'], six.string_types):
                 mixins.append(
                     helpers.import_class(kwargs['add_mixin'])
