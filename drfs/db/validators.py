@@ -115,7 +115,7 @@ class EmbeddedValidator:
                     lambda x: len(x or '') >= params['min'],
                     error="Field '{field_name}' value is too small. Required {min} chars".format(
                         field_name=field_name,
-                        max=params['min']
+                        min=params['min']
                     )
                 ))
             if 'max' in params:
