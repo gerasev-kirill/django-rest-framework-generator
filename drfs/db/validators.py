@@ -143,22 +143,38 @@ class EmbeddedValidator:
                 c[0]
                 for c in fix_choices(params['choices'])
             ]
-            if is_required:
+            def validate_choices_for_array(value):
+                value = value or []
+                for v in value:
+                    if v not in choices:
+                        return False
+                return True
+
+            if params['type'] == 'array':
                 validators.append(schema.And(
-                    lambda x: x in choices,
+                    validate_choices_for_array,
                     error="Key '{field_name}' value not in choices: {choices}".format(
                         field_name=field_name,
                         choices=choices
                     )
                 ))
             else:
-                validators.append(schema.And(
-                    lambda x: (x in choices) or x == None,
-                    error="Key '{field_name}' value not in choices: {choices}".format(
-                        field_name=field_name,
-                        choices=choices
-                    )
-                ))
+                if is_required:
+                    validators.append(schema.And(
+                        lambda x: x in choices,
+                        error="Key '{field_name}' value not in choices: {choices}".format(
+                            field_name=field_name,
+                            choices=choices
+                        )
+                    ))
+                else:
+                    validators.append(schema.And(
+                        lambda x: (x in choices) or x == None,
+                        error="Key '{field_name}' value not in choices: {choices}".format(
+                            field_name=field_name,
+                            choices=choices
+                        )
+                    ))
 
         if params['type'] == 'embedsOne':
             validator = EmbeddedValidator(params['model'], params=params)

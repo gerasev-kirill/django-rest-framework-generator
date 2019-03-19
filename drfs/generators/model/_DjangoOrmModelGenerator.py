@@ -88,6 +88,8 @@ class DjangoOrmModelGenerator(BaseModelGenerator):
             field_kwargs['null'] = True
         if params.get('primary', False):
             field_kwargs['primary_key'] = True
+        if params.get('unique', False):
+            field_kwargs['unique'] = True
 
         return field_class, field_args, field_kwargs
 
