@@ -104,9 +104,14 @@ class BaseModelGenerator(object):
             return model_cls
 
         fields['Meta'] = MetaNoAbstract
+
+        classes = []
         if mixin:
-            model_cls = type(self.model_name, (mixin, ChangesMixin, base_class), fields)
-        else:
-            model_cls = type(self.model_name, (ChangesMixin, base_class), fields)
+            classes.append(mixin)
+        if self.model_definition.get('options', {}).get('changes', True):
+            classes.append(ChangesMixin)
+        classes.append(base_class)
+
+        model_cls = type(self.model_name, tuple(classes), fields)
         setattr(model_cls, 'DRFS_MODEL_DEFINITION', self.model_definition)
         return model_cls

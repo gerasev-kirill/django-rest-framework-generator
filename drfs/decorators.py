@@ -73,6 +73,19 @@ DEFAULT_DOC_STRINGS = {
 }
 
 
+
+
+def drf_ignore_filter_backend(model_name=None):
+    def wrapper(func):
+        if model_name:
+            setattr(func, 'ignore_filter_backend', model_name)
+        else:
+            setattr(func, 'ignore_filter_backend', True)
+        return func
+    return wrapper
+
+
+
 def drf_action_decorator(func, model_acl):
     def wrapper(self, *args, **kwargs):
         lookup_url_kwarg = self.lookup_url_kwarg or self.lookup_field
@@ -98,6 +111,10 @@ def drf_action_decorator(func, model_acl):
         wrapper.bind_to_methods = func.bind_to_methods
         wrapper.detail = func.detail
         wrapper.kwargs = func.kwargs
+
+    for prop in dir(func):
+        if prop.startswith('ignore_'):
+            setattr(wrapper, prop, getattr(func, prop))
     # swagger documentation
     if func.__doc__:
         wrapper.__doc__ = func.__doc__
