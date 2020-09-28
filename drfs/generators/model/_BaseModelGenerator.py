@@ -31,7 +31,7 @@ class BaseModelGenerator(object):
             mixin_path = os.path.dirname(os.path.dirname(model_path))
             if os.path.isfile(os.path.join(mixin_path, 'model_mixins', self.model_name + '.py')):
                 from django.conf import settings
-                mixin_path = mixin_path.replace(settings.BASE_DIR, '')
+                mixin_path = mixin_path.replace(settings.BASE_DIR, '').split('dist-packages')[-1]
                 mixin_path = '.'.join(mixin_path.split('/'))
                 if not mixin_path:
                     mixin_path = os.path.basename(settings.BASE_DIR)
