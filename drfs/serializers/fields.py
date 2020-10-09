@@ -1,6 +1,5 @@
 from rest_framework import serializers, fields
-from django.utils import six
-import json
+import json, six
 
 FLOAT_TYPES = tuple([float] + list(six.integer_types))
 

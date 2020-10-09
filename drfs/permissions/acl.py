@@ -14,18 +14,17 @@ class EveryoneAclResolver(AclResolver):
 
 class UnauthenticatedAclResolver(AclResolver):
     def get_permission(self, request=None, drf={}, **kwargs):
-        is_authenticated = request.user.is_authenticated()
-        return not is_authenticated
+        return not request.user.is_authenticated
 
 
 class AuthenticatedAclResolver(AclResolver):
     def get_permission(self, request=None, drf={}, **kwargs):
-        return request.user.is_authenticated()
+        return request.user.is_authenticated
 
 
 class OwnerAclResolver(AclResolver):
     def get_permission(self, request=None, drf={}, obj=None, **kwargs):
-        if not request.user.is_authenticated():
+        if not request.user.is_authenticated:
             return False
         if hasattr(obj, 'owner'):
             if isinstance(obj.owner, six.integer_types) or isinstance(obj.owner, six.text_type) or isinstance(obj.owner, six.string_types):

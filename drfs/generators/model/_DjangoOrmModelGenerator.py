@@ -1,13 +1,9 @@
-
 from django.db.models import fields as django_fields
 from django.db import models as django_models
 from django.conf import settings as django_settings
 from django.dispatch import receiver
-from jsonfield import JSONField
-import os, json
 
 from ._BaseModelGenerator import BaseModelGenerator
-from ... import helpers
 from ...db import fields as drfs_fields
 
 
@@ -51,7 +47,7 @@ class DjangoOrmModelGenerator(BaseModelGenerator):
         'int': django_fields.IntegerField,
         'float': django_fields.FloatField,
         'number': django_fields.FloatField,
-        'object': JSONField,
+        'object': drfs_fields.JSONField,
         'date': django_fields.DateField,
         'datetime': django_fields.DateTimeField,
         'time': django_fields.TimeField,
@@ -140,6 +136,9 @@ class DjangoOrmModelGenerator(BaseModelGenerator):
         for k,v in params.items():
             if k in ['on_delete', 'onDelete']:
                 field_kwargs['on_delete'] = getattr(django_models, v)
+        if 'on_delete' not in field_kwargs:
+            # Note: on_delete will become a required argument in Django 2.0. In older versions it defaults to CASCADE.
+            field_kwargs['on_delete'] = django_models.CASCADE
         return field_class, field_args, field_kwargs
 
 
@@ -158,6 +157,9 @@ class DjangoOrmModelGenerator(BaseModelGenerator):
         for k,v in params.items():
             if k in ['on_delete', 'onDelete']:
                 field_kwargs['on_delete'] = getattr(django_models, v)
+        if 'on_delete' not in field_kwargs:
+            # Note: on_delete will become a required argument in Django 2.0. In older versions it defaults to CASCADE.
+            field_kwargs['on_delete'] = django_models.CASCADE
         return field_class, field_args, field_kwargs
 
 

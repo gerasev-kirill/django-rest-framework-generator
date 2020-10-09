@@ -15,7 +15,11 @@ class Model(TestCase):
             if not isinstance(field, field_class):
                 self.fail("Field '"+field.name+"' is not an instance of "+str(field_class))
             if 'default' in settings:
-                self.assertEqual(field.default, settings['default'])
+                # JSONField support for django >= 3.1
+                dvalue = field.default
+                if callable(dvalue):
+                    dvalue = dvalue()
+                self.assertEqual(dvalue, settings['default'])
             if 'max' in settings:
                 if settings['type'] in ['string']:
                     self.assertEqual(field.max_length, settings['max'])

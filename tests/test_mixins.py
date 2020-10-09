@@ -1,12 +1,14 @@
 from django.test import TestCase, RequestFactory
 from django.contrib.auth.models import User as UserModel
 from rest_framework.viewsets import ModelViewSet
-from rest_framework import filters
-from django.http import Http404
 
-import drfs, json
+import drfs
 from drfs import mixins
 
+try:
+    from rest_framework.filters import DjangoFilterBackend
+except ImportError:
+    from django_filters.rest_framework import DjangoFilterBackend
 
 
 
@@ -20,7 +22,7 @@ class CountMixin(TestCase):
         class CountMixinTest(mixins.CountModelMixin, ModelViewSet):
             queryset = UserModel.objects.all()
             serializer_class = drfs.generate_serializer(UserModel)
-            filter_backends = (filters.DjangoFilterBackend,)
+            filter_backends = (DjangoFilterBackend,)
             filter_fields = {'username':['contains'], }
 
         for s in ["test string 1", "test string 2", "another string 3"]:
@@ -68,7 +70,7 @@ class FindOneMixin(TestCase):
                 'username',
                 'id'
             ])
-            filter_backends = (filters.DjangoFilterBackend,)
+            filter_backends = (DjangoFilterBackend,)
             filter_fields = {'username':['contains'], }
 
         for s in ["test string 1", "test string 2", "another string 3"]:
@@ -333,7 +335,7 @@ class QuerysetExistsMixin(TestCase):
         class QuerysetExistsMixinTest(mixins.QuerysetExistsModelMixin, ModelViewSet):
             queryset = UserModel.objects.all()
             serializer_class = drfs.generate_serializer(UserModel)
-            filter_backends = (filters.DjangoFilterBackend,)
+            filter_backends = (DjangoFilterBackend,)
             filter_fields = {'username':['contains'], }
 
         for s in ["test string 1", "test string 2", "another string 3"]:

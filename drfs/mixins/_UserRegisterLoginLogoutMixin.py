@@ -1,7 +1,8 @@
-from rest_framework.decorators import list_route, detail_route
 from rest_framework.response import Response
 from rest_framework.authentication import TokenAuthentication
 from rest_framework import exceptions
+
+from drfs.decorators import action
 
 from ..serializers import rest as serializers_rest
 
@@ -84,7 +85,7 @@ class UserRegisterLoginLogoutMixin(object):
     def perform_register(self, serializer):
         serializer.save()
 
-    @list_route(methods=['post'])
+    @action(methods=['post'], detail=False)
     def register(self, request, *args, **kwargs):
         serializer = self.get_user_register_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -100,7 +101,7 @@ class UserRegisterLoginLogoutMixin(object):
     def perform_login(self, serializer):
         pass
 
-    @list_route(methods=['post'])
+    @action(methods=['post'], detail=False)
     def login(self, request, *args, **kwargs):
         """
         Login a user with username/email and password(depend on serializer)
@@ -138,7 +139,7 @@ class UserRegisterLoginLogoutMixin(object):
     def perform_logout(self, user, token):
         token.delete()
 
-    @list_route(methods=['delete'])
+    @action(methods=['delete'], detail=False)
     def logout(self, request, *args, **kwargs):
         """
         Logout a user with access token
@@ -158,7 +159,7 @@ class UserRegisterLoginLogoutMixin(object):
     def perform_reset_password(self, user, token):
         pass
 
-    @list_route(methods=['post'])
+    @action(methods=['post'], detail=False)
     def reset(self, request, *args, **kwargs):
         email = request.data.get('email', None)
         if not email:
@@ -178,7 +179,7 @@ class UserRegisterLoginLogoutMixin(object):
         user.set_password(new_password)
         user.save()
 
-    @list_route(methods=['post'])
+    @action(methods=['post'], detail=False)
     def set_password(self, request, *args, **kwargs):
         password = request.data.get('password', None)
         if not password:

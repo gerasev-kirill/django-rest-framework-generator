@@ -1,14 +1,14 @@
 from django.test import TestCase
-import drfs, json
+import drfs
 
 
 
 
 class Serializer(TestCase):
 
-    def test_selializergen(self):
+    def test_embedmodels(self):
         modelClass = drfs.generate_model('TestModelWithEmbeddedOne.json')
-        one_embedded =  modelClass._meta.get_fields()[-1]
+        #one_embedded =  modelClass._meta.get_field('one_embedded')
         serializerClass = drfs.generate_serializer(modelClass)
 
         obj = modelClass.objects.create(one_embedded={'estring': 'world'})

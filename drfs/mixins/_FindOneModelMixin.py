@@ -1,14 +1,14 @@
-from rest_framework.decorators import list_route, detail_route
 from rest_framework.response import Response
 
 from django.http import Http404
+from drfs.decorators import action
 
 
 
 
 class FindOneModelMixin(object):
 
-    @list_route(methods=['get'])
+    @action(methods=['get'], detail=False)
     def find_one(self, request, *args, **kwargs):
         """
         Returns first instance of the model matched by filter.where from the data source

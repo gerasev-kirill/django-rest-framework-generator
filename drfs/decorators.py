@@ -1,5 +1,7 @@
-from .permissions.acl_resolver import PermissionResolver
+import rest_framework
 from rest_framework import exceptions
+from .permissions.acl_resolver import PermissionResolver
+
 
 Resolver = PermissionResolver()
 
@@ -121,3 +123,20 @@ def drf_action_decorator(func, model_acl):
     else:
         wrapper.__doc__ = DEFAULT_DOC_STRINGS.get(func.__name__, "")
     return wrapper
+
+
+if int(rest_framework.VERSION.split('.')[0]) >= 3 and int(rest_framework.VERSION.split('.')[1]) >= 8:
+    from rest_framework.decorators import action
+else:
+    from rest_framework.decorators import list_route, detail_route
+
+    def action(methods=None, detail=None, **kwargs):
+        methods = ['get'] if (methods is None) else methods
+        methods = [method.lower() for method in methods]
+
+        assert detail is not None, (
+            "@action() missing required argument: 'detail'"
+        )
+        if detail:
+            return detail_route(methods, **kwargs)
+        return list_route(methods, **kwargs)

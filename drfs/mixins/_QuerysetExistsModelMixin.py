@@ -1,5 +1,6 @@
-from rest_framework.decorators import list_route
 from rest_framework.response import Response
+
+from drfs.decorators import action
 
 
 
@@ -8,7 +9,7 @@ from rest_framework.response import Response
 
 class QuerysetExistsModelMixin(object):
 
-    @list_route(methods=['get'])
+    @action(methods=['get'], detail=False)
     def queryset_exists(self, request, *args, **kwargs):
         """
         Check whether a model queryset exists in the data source

@@ -1,5 +1,4 @@
-import schema, os, json
-from django.utils import six
+import schema, os, json, six
 from django.core.exceptions import ValidationError
 
 FLOAT_TYPES = tuple([float] + list(six.integer_types))
