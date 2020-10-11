@@ -20,12 +20,12 @@ else:
 
 try:
     import django
-    if django.VERSION[0] >= 3 and django.VERSION[1] < 1:
+    if django.VERSION >= (3,1,0):
         pass
     else:
         requirements.append('jsonfield')
 except ImportError:
-    if sys.version_info.major >= 3 and sys.version_info.minor >= 8:
+    if sys.version_info >= (3,8,0):
         requirements[0] = 'Django>=3.1'
     else:
         requirements.append('jsonfield')

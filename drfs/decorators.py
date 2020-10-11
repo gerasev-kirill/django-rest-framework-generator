@@ -1,79 +1,10 @@
 import rest_framework
 from rest_framework import exceptions
 from .permissions.acl_resolver import PermissionResolver
+from . import helpers
 
 
 Resolver = PermissionResolver()
-
-
-DEFAULT_DOC_STRINGS = {
-    "list": """
-    Find all instances of the model matched by filter from the data source
-    ---
-    parameters:
-        - name: filter
-          description: Filter defining fields, where, order, skip, and limit. <a target="_blank" href="https://loopback.io/doc/en/lb2/Querying-data.html#using-stringified-json-in-rest-queries">Docs here</a>
-          required: false
-          type: objects
-          paramType: query
-    """,
-    "create": """
-    Create a new instance of the model and persist it into the data source
-    ---
-    """,
-    "retrieve": """
-    Find a model instance by id from the data source
-    ---
-    parameters:
-        - name: pk
-          description: Model id
-          required: true
-          type: string
-          paramType: query
-        - name: filter
-          description: Filter defining fields. <a target="_blank" href="https://loopback.io/doc/en/lb2/Querying-data.html#using-stringified-json-in-rest-queries">Docs here</a>
-          required: false
-          type: objects
-          paramType: query
-    """,
-    "update": """
-    Update attributes for a model instance and persist it into the data source
-    ---
-    parameters:
-        - name: pk
-          description: Model id
-          required: true
-          type: string
-          paramType: query
-    """,
-    "partial_update": """
-    Partial update attributes for a model instance and persist it into the data source
-    ---
-    parameters:
-        - name: pk
-          description: Model id
-          required: true
-          type: string
-          paramType: query
-    """,
-    "destroy": """
-    Delete a model instance by id from the data source
-    . Returns 204 on success, 404 if object doesn't exists
-    ---
-    type:
-    omit_serializer: true
-    responseMessages:
-        - code: 204
-          message: Request was successful
-    parameters:
-        - name: pk
-          description: Model id
-          required: true
-          type: string
-          paramType: query
-    """
-}
-
 
 
 
@@ -110,25 +41,83 @@ def drf_action_decorator(func, model_acl):
 
 
     if getattr(func, 'bind_to_methods', None):
+        # DEPRECATED
         wrapper.bind_to_methods = func.bind_to_methods
         wrapper.detail = func.detail
+        wrapper.kwargs = func.kwargs
+    elif getattr(func, 'mapping', None):
+        # drf >= 3.8
+        wrapper.detail = func.detail
+        wrapper.url_path = func.url_path
+        wrapper.url_name = func.url_name
         wrapper.kwargs = func.kwargs
 
     for prop in dir(func):
         if prop.startswith('ignore_'):
             setattr(wrapper, prop, getattr(func, prop))
-    # swagger documentation
-    if func.__doc__:
-        wrapper.__doc__ = func.__doc__
-    else:
-        wrapper.__doc__ = DEFAULT_DOC_STRINGS.get(func.__name__, "")
     return wrapper
 
 
-if int(rest_framework.VERSION.split('.')[0]) >= 3 and int(rest_framework.VERSION.split('.')[1]) >= 8:
+
+if helpers.rest_framework_version >= (3,8,0):
     from rest_framework.decorators import action
 else:
+    # DEPRECATED
     from rest_framework.decorators import list_route, detail_route
+
+    class MethodMapper(dict):
+        """
+        Enables mapping HTTP methods to different ViewSet methods for a single,
+        logical action.
+        Example usage:
+            class MyViewSet(ViewSet):
+                @action(detail=False)
+                def example(self, request, **kwargs):
+                    ...
+                @example.mapping.post
+                def create_example(self, request, **kwargs):
+                    ...
+        """
+
+        def __init__(self, action, methods):
+            self.action = action
+            for method in methods:
+                self[method] = self.action.__name__
+
+        def _map(self, method, func):
+            assert method not in self, (
+                "Method '%s' has already been mapped to '.%s'." % (method, self[method]))
+            assert func.__name__ != self.action.__name__, (
+                "Method mapping does not behave like the property decorator. You "
+                "cannot use the same method name for each mapping declaration.")
+
+            self[method] = func.__name__
+
+            return func
+
+        def get(self, func):
+            return self._map('get', func)
+
+        def post(self, func):
+            return self._map('post', func)
+
+        def put(self, func):
+            return self._map('put', func)
+
+        def patch(self, func):
+            return self._map('patch', func)
+
+        def delete(self, func):
+            return self._map('delete', func)
+
+        def head(self, func):
+            return self._map('head', func)
+
+        def options(self, func):
+            return self._map('options', func)
+
+        def trace(self, func):
+            return self._map('trace', func)
 
     def action(methods=None, detail=None, **kwargs):
         methods = ['get'] if (methods is None) else methods
@@ -137,6 +126,11 @@ else:
         assert detail is not None, (
             "@action() missing required argument: 'detail'"
         )
-        if detail:
-            return detail_route(methods, **kwargs)
-        return list_route(methods, **kwargs)
+        def decorator(func):
+            if detail:
+                decorated = detail_route(methods, **kwargs)(func)
+            else:
+                decorated = list_route(methods, **kwargs)(func)
+            decorated.mapping = MethodMapper(func, methods)
+            return decorated
+        return decorator

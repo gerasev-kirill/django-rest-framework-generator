@@ -5,7 +5,8 @@ from .validators import EmbeddedValidator
 
 
 if django.VERSION[0] >= 3 and django.VERSION[1] >= 1:
-    from django.db.models import JSONField as BaseJSONField
+    from django.db.models import JSONField as JSONFieldBase
+    from django.core.serializers.json import DjangoJSONEncoder
 
     '''
         https://docs.djangoproject.com/en/3.1/ref/models/fields/
@@ -14,17 +15,21 @@ if django.VERSION[0] >= 3 and django.VERSION[1] >= 1:
         such as dict or a function.
         Providing a mutable default object like default={} or default=[] shares the one object between all model instances.
     '''
-    def get_default_value(value):
-        def get_value():
-            return copy.deepcopy(value)
-        return get_value
 
-
-    class JSONField(BaseJSONField):
+    class JSONField(JSONFieldBase):
         def __init__(self, *args, **kwargs):
-            if 'default' in kwargs and not callable(kwargs['default']):
-                kwargs['default'] = get_default_value(kwargs['default'])
+            if 'encoder' not in kwargs:
+                kwargs['encoder'] = DjangoJSONEncoder
+            self.__default_value = kwargs.get('default', None)
+            if self.__default_value is not None and not callable(self.__default_value):
+                kwargs['default'] = kwargs['default'].__class__
             super(JSONField, self).__init__(*args, **kwargs)
+
+        def get_default(self):
+            """Return the default value for this field."""
+            if self.__default_value is not None:
+                return copy.deepcopy(self.__default_value)
+            return self._get_default()
 
 
     class BaseEmbedded(JSONField):
@@ -50,7 +55,11 @@ if django.VERSION[0] >= 3 and django.VERSION[1] >= 1:
             )
 
 else:
-    from jsonfield import JSONField
+    from jsonfield.fields import JSONFieldBase, models
+
+    class JSONField(JSONFieldBase, models.TextField):
+        def __init__(self, *args, encoder=None, decoder=None, **kwargs):
+            super(JSONField, self).__init__(*args, **kwargs)
 
     class BaseEmbedded(JSONField):
         embedded_validator = None

@@ -1,8 +1,8 @@
 from django.test import TestCase, RequestFactory
 from django.contrib.auth.models import User, AnonymousUser
-from django.db.models.fields.related import ForeignKey
-from rest_framework import filters
-import drfs, json
+from rest_framework.response import Response
+import drfs
+from drfs.decorators import action
 from . import models
 
 
@@ -22,6 +22,7 @@ class ViewsetAcl(TestCase):
             is_staff=True
         )
 
+    '''
     def test_everyone(self):
         def test_user_deny(user):
             request.user = user
@@ -218,6 +219,7 @@ class ViewsetAcl(TestCase):
             "DRFS: Permission Denied"
         )
 
+    '''
     def test_complex_acl(self):
         def test_user(user, apiPoint, expectCode):
             request.user = user
@@ -238,9 +240,20 @@ class ViewsetAcl(TestCase):
         obj = modelClass.objects.create(
             owner = self.user
         )
-        viewset = drfs.generate_viewset(modelClass, acl = [
+
+        class SpecialMixin(object):
+            @action(detail=False)
+            def my_custom_action(self, *args, **kwargs):
+                return Response('success')
+
+            @action(methods=['get', 'post'], detail=False)
+            def my_custom_action2(self, *args, **kwargs):
+                return Response('success')
+
+
+        viewset = drfs.generate_viewset(modelClass, add_mixin=SpecialMixin, acl = [
             {
-                "principalId": "$unauthenticated",
+                "principalId": "$everyone",
                 "property": ".+",
                 "permission": "DENY"
             }, {
@@ -249,9 +262,13 @@ class ViewsetAcl(TestCase):
                 "permission": "ALLOW"
             }, {
                 "principalId": "$authenticated",
-                "property": "list",
+                "property": ["list", "my_custom_action"],
                 "permission": "ALLOW"
-            },{
+            }, {
+                "principalId": "$unauthenticated",
+                "property": "my_custom_action2",
+                "permission": "ALLOW"
+            } ,{
                 "principalId": "$owner",
                 "property": "update",
                 "permission": "ALLOW"
@@ -265,6 +282,13 @@ class ViewsetAcl(TestCase):
                 "permission": "ALLOW"
             }
         ])
+
         request = self.factory.get('/')
         test_user(self.anonymous, {'get': 'list'}, 403)
         test_user(self.anonymous, {'get': 'retrieve'}, 403)
+        test_user(self.anonymous, {'get': 'my_custom_action'}, 403)
+        test_user(self.anonymous, {'get': 'my_custom_action2'}, 200)
+        test_user(self.user, {'get': 'my_custom_action2'}, 403)
+
+        request = self.factory.post('/')
+        test_user(self.anonymous, {'post': 'my_custom_action2'}, 200)

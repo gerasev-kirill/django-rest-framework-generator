@@ -24,7 +24,7 @@ run_tests:
 	bash -c "source ap2; python2 ./manage.py test"
 
 run_tests3:
-	bash -c "source ap3; python3 ./manage.py test"
+	bash -c "source ap3; python3 ./manage.py test tests"
 
 run_tests4:
-	bash -c "source ap4; python3 ./manage.py test"
+	bash -c "source ap4; python3 ./manage.py test tests"

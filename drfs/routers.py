@@ -1,99 +1,189 @@
 
 from collections import namedtuple
 from django.core.exceptions import ImproperlyConfigured
-from rest_framework.routers import SimpleRouter as BaseSimpleRouter, Route, DynamicDetailRoute, DynamicListRoute
-from rest_framework.routers import flatten, replace_methodname
+from rest_framework.routers import SimpleRouter as BaseSimpleRouter, DefaultRouter as BaseDefaultRouter, Route
+from rest_framework.routers import flatten
+from . import helpers
 
-from django.conf.urls import url
+try:
+    from django.urls import re_path
+except:
+    # DEPRECATED: django < 2.0
+    from django.conf.urls import url as re_path
 
-RouteDrfs = namedtuple('Route', ['url', 'mapping', 'name', 'initkwargs', 'trailing_slash'])
+try:
+    from rest_framework.routers import escape_curly_brackets, DynamicRoute
+
+    def replace_methodname(text, text2):
+        return text
+
+    def is_dynamic_list_route(route):
+        return isinstance(route, DynamicRoute) and not route.detail
+
+    def is_dynamic_detail_route(route):
+        return isinstance(route, DynamicRoute) and route.detail
+
+
+except ImportError:
+    # DEPRECATED: drf < 3.8
+    from rest_framework.routers import replace_methodname, DynamicDetailRoute as DynamicDeprecatedDetailRoute, DynamicListRoute as DynamicDeprecatedListRoute
+
+    def escape_curly_brackets(url_path):
+        """
+        Double brackets in regex of url_path for escape string formatting
+        """
+        if ('{' and '}') in url_path:
+            url_path = url_path.replace('{', '{{').replace('}', '}}')
+        return url_path
+
+    def is_dynamic_list_route(route):
+        return isinstance(route, DynamicDeprecatedListRoute)
+
+    def is_dynamic_detail_route(route):
+        return isinstance(route, DynamicDeprecatedDetailRoute)
+
+
+class ExtraAction:
+    def __init__(self, **kwargs):
+        for k in kwargs:
+            setattr(self, k, kwargs[k])
+
+
+
+#
+#
+#
+
+
+RouteDrfs = namedtuple('Route', ['url', 'mapping', 'name', 'detail', 'initkwargs', 'trailing_slash'])
+
+
+
 
 class SimpleRouter(BaseSimpleRouter):
+    def _get_viewset_extra_actions(self, viewset):
+        if hasattr(viewset, 'get_extra_actions'):
+            return viewset.get_extra_actions()
+        # DEPRECATED: drf < 3.8
+        extra_actions = []
+
+        for methodname in dir(viewset):
+            attr = getattr(viewset, methodname)
+            httpmethods = getattr(attr, 'bind_to_methods', None)
+            if httpmethods:
+                httpmethods = [method.lower() for method in httpmethods]
+                extra_actions.append(ExtraAction(
+                    url=getattr(attr, 'url', None),
+                    detail=getattr(attr, 'detail', True),
+                    name=getattr(attr, 'name', None),
+                    kwargs=getattr(attr, 'kwargs', {}),
+                    mapping=getattr(attr, 'mapping', None),
+                    #mapping={httpmethod: methodname for httpmethod in httpmethods},
+                    __name__=methodname,
+                ))
+        return extra_actions
+
+
+    def register(self, prefix, viewset, base_name=None, basename=None):
+        # старое название base_name (drf<3.11), новое - basename
+        basename = base_name or basename
+        if basename is None:
+            if hasattr(self, 'get_default_basename'):
+                # drf >= 3.11
+                basename = self.get_default_basename(viewset)
+            else:
+                # DEPRECATED
+                basename = self.get_default_base_name(viewset)
+        self.registry.append((prefix, viewset, basename))
+        # invalidate the urls cache
+        if hasattr(self, '_urls'):
+            del self._urls
+
+
     def get_routes(self, viewset):
         """
         Augment `self.routes` with any dynamically generated routes.
-
         Returns a list of the Route namedtuple.
         """
         # converting to list as iterables are good for one pass, known host needs to be checked again and again for
         # different functions.
         known_actions = list(flatten([route.mapping.values() for route in self.routes if isinstance(route, Route)]))
-        # Determine any `@detail_route` or `@list_route` decorated methods on the viewset
-        detail_routes = []
-        list_routes = []
-        for methodname in dir(viewset):
-            attr = getattr(viewset, methodname)
-            httpmethods = getattr(attr, 'bind_to_methods', None)
-            detail = getattr(attr, 'detail', True)
-            if httpmethods:
-                # checking method names against the known actions list
-                if methodname in known_actions:
-                    raise ImproperlyConfigured('Cannot use @detail_route or @list_route '
-                                               'decorators on method "%s" '
-                                               'as it is an existing route' % methodname)
-                httpmethods = [method.lower() for method in httpmethods]
-                if detail:
-                    detail_routes.append((httpmethods, methodname))
-                else:
-                    list_routes.append((httpmethods, methodname))
+        extra_actions = self._get_viewset_extra_actions(viewset)
 
-        def _get_dynamic_routes(route, dynamic_routes):
-            ret = {}
-            for httpmethods, methodname in dynamic_routes:
-                method_kwargs = getattr(viewset, methodname).kwargs
-                initkwargs = route.initkwargs.copy()
-                initkwargs.update(method_kwargs)
-                url_path = initkwargs.pop("url_path", None) or methodname
-                url_name = initkwargs.pop("url_name", None) or url_path
-                trailing_slash = initkwargs.pop("trailing_slash", None)
-                full_url = replace_methodname(route.url, url_path)
-                if ret.get(full_url, None):
-                    for httpmethod in httpmethods:
-                        if ret[full_url]['mapping'].get(httpmethod):
-                            raise ImproperlyConfigured('Cannot map to url "%s" method "%s". Already exists. Try another url or method' % (
-                                full_url,
-                                httpmethod
-                            ))
-                        ret[full_url]['mapping'][httpmethod] = methodname
-                else:
-                    ret[full_url] = {
-                        'url': full_url,
-                        'trailing_slash': trailing_slash,
-                        'mapping': {httpmethod: methodname for httpmethod in httpmethods},
-                        'name': replace_methodname(route.name, url_name),
-                        'initkwargs': initkwargs,
-                    }
-            return [RouteDrfs(**params) for fulr, params in ret.items()]
+        # checking action names against the known actions list
+        not_allowed = [
+            action.__name__ for action in extra_actions
+            if action.__name__ in known_actions
+        ]
+        if not_allowed:
+            msg = ('Cannot use the @action decorator on the following '
+                   'methods, as they are existing routes: %s')
+            raise ImproperlyConfigured(msg % ', '.join(not_allowed))
 
+        # partition detail and list actions
+        detail_actions = [action for action in extra_actions if action.detail]
+        list_actions = [action for action in extra_actions if not action.detail]
 
-            ret = []
-            for httpmethods, methodname in dynamic_routes:
-                method_kwargs = getattr(viewset, methodname).kwargs
-                initkwargs = route.initkwargs.copy()
-                initkwargs.update(method_kwargs)
-                url_path = initkwargs.pop("url_path", None) or methodname
-                url_name = initkwargs.pop("url_name", None) or url_path
-                ret.append(RouteDrfs(
-                    url=replace_methodname(route.url, url_path),
-                    mapping={httpmethod: methodname for httpmethod in httpmethods},
-                    name=replace_methodname(route.name, url_name),
-                    initkwargs=initkwargs,
-                ))
-            return ret
-
-        ret = []
+        routes = []
+        dynamic_routes = {}
         for route in self.routes:
-            if isinstance(route, DynamicDetailRoute):
-                # Dynamic detail routes (@detail_route decorator)
-                ret += _get_dynamic_routes(route, detail_routes)
-            elif isinstance(route, DynamicListRoute):
-                # Dynamic list routes (@list_route decorator)
-                ret += _get_dynamic_routes(route, list_routes)
+            if is_dynamic_detail_route(route):
+                for action in detail_actions:
+                    r = self._get_dynamic_route(route, action, known_routes=dynamic_routes)
+                    dynamic_routes[r.url] = r
+            elif is_dynamic_list_route(route):
+                for action in list_actions:
+                    r = self._get_dynamic_route(route, action, known_routes=dynamic_routes)
+                    dynamic_routes[r.url] = r
             else:
-                # Standard route
-                ret.append(route)
+                routes.append(route)
 
-        return ret
+        for full_url in dynamic_routes:
+            routes.append(dynamic_routes[full_url])
+        return routes
+
+
+
+    def _get_dynamic_route(self, route, action, known_routes={}):
+        initkwargs = route.initkwargs.copy()
+        initkwargs.update(action.kwargs)
+        if helpers.rest_framework_version >= (3,9,0):
+            url_path = escape_curly_brackets(action.url_path)
+            route_kwargs = {
+                'url': route.url.replace('{url_path}', url_path),
+                'mapping': action.mapping,
+                'name': route.name.replace('{url_name}', action.url_name),
+                'trailing_slash': initkwargs.pop("trailing_slash", None),
+                'detail': route.detail,
+                'initkwargs': initkwargs
+            }
+        else:
+            # DEPRECATED: drf < 3.9
+            url_path = escape_curly_brackets(initkwargs.pop("url_path", None) or action.__name__)
+            url_name = initkwargs.pop("url_name", None) or url_path
+            route_kwargs = {
+                'url': replace_methodname(route.url, url_path),
+                'mapping': action.mapping,
+                'name': replace_methodname(route.name, url_name),
+                'trailing_slash': initkwargs.pop("trailing_slash", None),
+                'detail': action.detail,
+                'initkwargs': initkwargs,
+            }
+        # сверяемся, чтоб не было дубликатов в router
+        if not known_routes.get(route_kwargs['url'], None):
+            return RouteDrfs(**route_kwargs)
+
+        known_mapping = known_routes[route_kwargs['url']]['mapping']
+        for httpmethod in ['get', 'post', 'put', 'patch', 'delete', 'head', 'options', 'trace']:
+            if not isinstance(route_kwargs['mapping'].get(httpmethod, None), str):
+                continue
+            if isinstance(known_mapping.get(httpmethod, None), str):
+                raise ImproperlyConfigured('Cannot map to url "%s" method "%s". Already exists. Try another url or method' % (
+                    route_kwargs['url'],
+                    httpmethod
+                ))
+
+        return RouteDrfs(**route_kwargs)
 
 
     def get_urls(self):
@@ -133,8 +223,31 @@ class SimpleRouter(BaseSimpleRouter):
                 if not prefix and regex[:2] == '^/':
                     regex = '^' + regex[2:]
 
-                view = viewset.as_view(mapping, **route.initkwargs)
+                initkwargs = route.initkwargs.copy()
+                if helpers.rest_framework_version >= (3,7,0):
+                    initkwargs.update({'basename': basename})
+                if helpers.rest_framework_version >= (3,8,0):
+                    initkwargs.update({'detail': route.detail})
+
+                view = viewset.as_view(mapping, **initkwargs)
                 name = route.name.format(basename=basename)
-                ret.append(url(regex, view, name=name))
+                ret.append(re_path(regex, view, name=name))
 
         return ret
+
+
+
+class DefaultRouter(BaseDefaultRouter):
+    def register(self, prefix, viewset, base_name=None, basename=None):
+        # старое название base_name (drf<3.11), новое - basename
+        basename = base_name or basename
+        if basename is None:
+            if hasattr(self, 'get_default_basename'):
+                # drf >= 3.11
+                basename = self.get_default_basename(viewset)
+            else:
+                basename = self.get_default_base_name(viewset)
+        self.registry.append((prefix, viewset, basename))
+        # invalidate the urls cache
+        if hasattr(self, '_urls'):
+            del self._urls

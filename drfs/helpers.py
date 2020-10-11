@@ -1,6 +1,10 @@
 # -*- coding: utf-8 -*-
+import rest_framework
 
-
+rest_framework_version = tuple([
+    int(x)
+    for x in rest_framework.VERSION.split('.')
+])
 
 def import_class(cl):
     cl = str(cl)

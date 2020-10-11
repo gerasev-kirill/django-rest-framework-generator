@@ -102,8 +102,8 @@ class ViewsetGenFactory(type):
             model_acl = kwargs.get('acl')
         new_cls = type(name, tuple(classes), {})
 
-        # params.items - RuntimeError: dictionary changed size during iteration
-        for class_prop, generated_value in list(params.items()):
+        # params.keys - RuntimeError: dictionary changed size during iteration
+        for class_prop in list(params.keys()):
             if getattr(new_cls, class_prop, None):
                 del params[class_prop]
 
@@ -119,8 +119,7 @@ class ViewsetGenFactory(type):
                 )
                 continue
             func = getattr(new_cls, prop)
-            httpmethods = getattr(func, 'bind_to_methods', None)
-            if httpmethods:
+            if hasattr(func, 'mapping') or hasattr(func, 'bind_to_methods'):
                 setattr(new_cls, prop,
                     decorators.drf_action_decorator(
                         func,
