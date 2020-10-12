@@ -5,7 +5,59 @@ from . import helpers
 
 
 Resolver = PermissionResolver()
+class MethodMapper(dict):
+    """
+    Enables mapping HTTP methods to different ViewSet methods for a single,
+    logical action.
+    Example usage:
+        class MyViewSet(ViewSet):
+            @action(detail=False)
+            def example(self, request, **kwargs):
+                ...
+            @example.mapping.post
+            def create_example(self, request, **kwargs):
+                ...
+    """
 
+    def __init__(self, action, methods):
+        self.action = action
+        for method in methods:
+            self[method] = self.action.__name__
+
+    def _map(self, method, func):
+        assert method not in self, (
+            "Method '%s' has already been mapped to '.%s'." % (method, self[method]))
+        assert func.__name__ != self.action.__name__, (
+            "Method mapping does not behave like the property decorator. You "
+            "cannot use the same method name for each mapping declaration.")
+
+        self[method] = func.__name__
+
+        return func
+
+    def get(self, func):
+        return self._map('get', func)
+
+    def post(self, func):
+        return self._map('post', func)
+
+    def put(self, func):
+        return self._map('put', func)
+
+    def patch(self, func):
+        return self._map('patch', func)
+
+    def delete(self, func):
+        return self._map('delete', func)
+
+    def head(self, func):
+        return self._map('head', func)
+
+    def options(self, func):
+        return self._map('options', func)
+
+    def trace(self, func):
+        return self._map('trace', func)
 
 
 def drf_ignore_filter_backend(model_name=None):
@@ -43,6 +95,7 @@ def drf_action_decorator(func, model_acl):
     if getattr(func, 'bind_to_methods', None):
         # DEPRECATED
         wrapper.bind_to_methods = func.bind_to_methods
+        wrapper.mapping = MethodMapper(func, func.bind_to_methods)
         wrapper.detail = func.detail
         wrapper.kwargs = func.kwargs
     elif getattr(func, 'mapping', None):
@@ -65,59 +118,7 @@ else:
     # DEPRECATED
     from rest_framework.decorators import list_route, detail_route
 
-    class MethodMapper(dict):
-        """
-        Enables mapping HTTP methods to different ViewSet methods for a single,
-        logical action.
-        Example usage:
-            class MyViewSet(ViewSet):
-                @action(detail=False)
-                def example(self, request, **kwargs):
-                    ...
-                @example.mapping.post
-                def create_example(self, request, **kwargs):
-                    ...
-        """
 
-        def __init__(self, action, methods):
-            self.action = action
-            for method in methods:
-                self[method] = self.action.__name__
-
-        def _map(self, method, func):
-            assert method not in self, (
-                "Method '%s' has already been mapped to '.%s'." % (method, self[method]))
-            assert func.__name__ != self.action.__name__, (
-                "Method mapping does not behave like the property decorator. You "
-                "cannot use the same method name for each mapping declaration.")
-
-            self[method] = func.__name__
-
-            return func
-
-        def get(self, func):
-            return self._map('get', func)
-
-        def post(self, func):
-            return self._map('post', func)
-
-        def put(self, func):
-            return self._map('put', func)
-
-        def patch(self, func):
-            return self._map('patch', func)
-
-        def delete(self, func):
-            return self._map('delete', func)
-
-        def head(self, func):
-            return self._map('head', func)
-
-        def options(self, func):
-            return self._map('options', func)
-
-        def trace(self, func):
-            return self._map('trace', func)
 
     def action(methods=None, detail=None, **kwargs):
         methods = ['get'] if (methods is None) else methods
@@ -132,5 +133,6 @@ else:
             else:
                 decorated = list_route(methods, **kwargs)(func)
             decorated.mapping = MethodMapper(func, methods)
+            #print('decorated', func, decorated.mapping)
             return decorated
         return decorator

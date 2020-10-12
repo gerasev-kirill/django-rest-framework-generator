@@ -183,7 +183,6 @@ class BasicViewSet(viewsets.ViewSet):
     def action3(self, request, pk, *args, **kwargs):
         return Response({'post': pk})
 
-    print(action3.__dict__)
     @action3.mapping.delete
     def action3_delete(self, request, pk, *args, **kwargs):
         return Response({'delete': pk})

@@ -4,7 +4,7 @@ from rest_framework.serializers import CharField
 from .validators import EmbeddedValidator
 
 
-if django.VERSION[0] >= 3 and django.VERSION[1] >= 1:
+if django.VERSION >= (3,1,0):
     from django.db.models import JSONField as JSONFieldBase
     from django.core.serializers.json import DjangoJSONEncoder
 
