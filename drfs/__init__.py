@@ -39,7 +39,13 @@ def find_model_definition(name, path=None):
     return (module_name, path)
 
 
-def get_model(name, app=None):
+__model_cache = {}
+def get_model(name, app=None, latest=False):
+    if latest:
+        _name = name.replace('.json', '')
+        if _name in __model_cache:
+            return __model_cache[_name]
+
     from django.apps import apps
     model = None
     name = name.replace('.json','').lower()
@@ -78,8 +84,9 @@ def generate_model(path):
         from .generators.model import DjangoOrmModelGenerator
         MODEL_GENERATOR_CLASS = DjangoOrmModelGenerator
     converter = MODEL_GENERATOR_CLASS(definition, module_name, model_path=path)
-    return converter.to_django_model()
-
+    model = converter.to_django_model()
+    __model_cache[model.__name__] = model
+    return model
 
 
 

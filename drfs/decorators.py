@@ -1,4 +1,4 @@
-import rest_framework
+from functools import wraps
 from rest_framework import exceptions
 from .permissions.acl_resolver import PermissionResolver
 from . import helpers
@@ -32,7 +32,6 @@ class MethodMapper(dict):
             "cannot use the same method name for each mapping declaration.")
 
         self[method] = func.__name__
-
         return func
 
     def get(self, func):
@@ -72,6 +71,8 @@ def drf_ignore_filter_backend(model_name=None):
 
 
 def drf_action_decorator(func, model_acl):
+
+    @wraps(func)
     def wrapper(self, *args, **kwargs):
         lookup_url_kwarg = self.lookup_url_kwarg or self.lookup_field
         resolver_kwargs = {
@@ -92,18 +93,18 @@ def drf_action_decorator(func, model_acl):
         return func(self, *args, **kwargs)
 
 
-    if getattr(func, 'bind_to_methods', None):
-        # DEPRECATED
-        wrapper.bind_to_methods = func.bind_to_methods
-        wrapper.mapping = MethodMapper(func, func.bind_to_methods)
-        wrapper.detail = func.detail
+    if getattr(func, 'bind_to_methods', None) and not hasattr(func, 'mapping'):
+        # DEPRECATED drf <= 3.8
+        #wrapper.bind_to_methods = func.bind_to_methods
+        methods = [
+            method.lower()
+            for method in func.bind_to_methods or ['get']
+        ]
+        wrapper.url_path = func.kwargs.pop('url_path', None) or func.__name__
+        wrapper.url_name = func.kwargs.pop('url_name', None) or func.__name__.replace('_', '-')
+        wrapper.mapping = MethodMapper(func, methods)
         wrapper.kwargs = func.kwargs
-    elif getattr(func, 'mapping', None):
-        # drf >= 3.8
         wrapper.detail = func.detail
-        wrapper.url_path = func.url_path
-        wrapper.url_name = func.url_name
-        wrapper.kwargs = func.kwargs
 
     for prop in dir(func):
         if prop.startswith('ignore_'):
@@ -132,7 +133,9 @@ else:
                 decorated = detail_route(methods, **kwargs)(func)
             else:
                 decorated = list_route(methods, **kwargs)(func)
+            decorated.url_path = kwargs.pop('url_path', None) or func.__name__
+            decorated.url_name = kwargs.pop('url_name', None) or func.__name__.replace('_', '-')
             decorated.mapping = MethodMapper(func, methods)
-            #print('decorated', func, decorated.mapping)
+            decorated.kwargs = kwargs
             return decorated
         return decorator

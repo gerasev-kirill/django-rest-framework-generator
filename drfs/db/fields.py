@@ -20,16 +20,27 @@ if django.VERSION >= (3,1,0):
         def __init__(self, *args, **kwargs):
             if 'encoder' not in kwargs:
                 kwargs['encoder'] = DjangoJSONEncoder
-            self.__default_value = kwargs.get('default', None)
-            if self.__default_value is not None and not callable(self.__default_value):
-                kwargs['default'] = kwargs['default'].__class__
+            self._is_default_callable = kwargs.get('default', None) is not None and callable(kwargs.get('default', None))
             super(JSONField, self).__init__(*args, **kwargs)
+
+        def _check_default(self):
+            return []
 
         def get_default(self):
             """Return the default value for this field."""
-            if self.__default_value is not None:
-                return copy.deepcopy(self.__default_value)
+            if not self._is_default_callable:
+                value = self._get_default()
+                if isinstance(value, dict) and not value:
+                    return {}
+                if isinstance(value, list) and not value:
+                    return []
+                return copy.deepcopy(value)
             return self._get_default()
+
+        def get_prep_value(self, value):
+            if value is None:
+                return value
+            return json.dumps(value, cls=self.encoder, ensure_ascii=False)
 
 
     class BaseEmbedded(JSONField):

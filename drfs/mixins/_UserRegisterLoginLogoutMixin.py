@@ -149,8 +149,10 @@ class UserRegisterLoginLogoutMixin(object):
             - code: 204
               message: Request was successful
         """
-        tAuth = TokenAuthentication()
-        user, token = tAuth.authenticate(request)
+        result = TokenAuthentication().authenticate(request)
+        if not result or len(result) != 2:
+            return Response({}, status=204)
+        user, token = result
         self.perform_logout(user, token)
         return Response({}, status=204)
 

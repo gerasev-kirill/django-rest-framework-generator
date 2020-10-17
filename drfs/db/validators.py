@@ -60,10 +60,17 @@ class EmbeddedValidator:
             ))
 
         self.schema = {}
+        self.options = {
+            'deleteKeyIfValueIn': {}
+        }
         for name, data in (self.model_data.get('properties', None) or {}).items():
+            if data.get('deleteKeyIfValueIn', None):
+                self.options['deleteKeyIfValueIn'][name] = data['deleteKeyIfValueIn']
             name, validators = self.build_schema(name, data)
             self.schema[name] = schema.And(*validators)
         for name, data in (self.model_data.get('relations', None) or {}).items():
+            if data.get('deleteKeyIfValueIn', None):
+                self.options['deleteKeyIfValueIn'][name] = data['deleteKeyIfValueIn']
             name, validators = self.build_schema(name, data)
             self.schema[name] = validators
 
@@ -202,11 +209,19 @@ class EmbeddedValidator:
         return field, validators
 
 
+    def clean_data(self, data):
+        if not data or not self.options['deleteKeyIfValueIn']:
+            return data
+        for k in list(data.keys()):
+            if data[k] in self.options['deleteKeyIfValueIn'].get(k, []):
+                del data[k]
+        return data
+
     def validate_data(self, data):
         if data == None and not self.params.get('required', False):
             return self.params.get('default', None) or None
         try:
-            return self.schema.validate(data)
+            return self.clean_data(self.schema.validate(data))
         except Exception as e:
             raise ValidationError(str(e))
 

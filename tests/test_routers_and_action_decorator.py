@@ -201,7 +201,9 @@ class TestSimpleRouter(URLPatternsTestCase, TestCase):
 
     def test_action_routes(self):
         # Get action routes (first two are list/detail)
-        routes = self.router.get_routes(BasicViewSet)[2:]
+        routes = list(reversed(
+            self.router.get_routes(BasicViewSet)[:3]
+        ))
 
         assert routes[0].url == '^{prefix}/{lookup}/action1{trailing_slash}$'
         assert routes[0].mapping == {
@@ -410,7 +412,7 @@ class TestActionKeywordArgs(TestCase):
 
         self.router = SimpleRouter()
         self.router.register(r'test', TestViewSet, basename='test')
-        self.view = self.router.urls[-1].callback
+        self.view = self.router.urls.get_url_pattern_by_name('test-custom').callback
 
     def test_action_kwargs(self):
         request = factory.post('/test/0/custom/')
@@ -479,7 +481,13 @@ class TestDynamicListAndDetailRouter(TestCase):
 
     def _test_list_and_detail_route_decorators(self, viewset):
         routes = self.router.get_routes(viewset)
-        decorator_routes = [r for r in routes if not (r.name.endswith('-list') or r.name.endswith('-detail'))]
+        #decorator_routes = [r for r in routes if not (r.name.endswith('-list') or r.name.endswith('-detail'))]
+        def get_route(name):
+            name = '{basename}-' + '-'.join(name.split('_'))
+            for r in routes:
+                if r.name == name:
+                    return r
+            return None
 
         MethodNamesMap = namedtuple('MethodNamesMap', 'method_name url_path')
         # Make sure all these endpoints exist and none have been clobbered
@@ -490,7 +498,8 @@ class TestDynamicListAndDetailRouter(TestCase):
                                       MethodNamesMap('detail_route_get', 'detail_route_get'),
                                       MethodNamesMap('detail_route_post', 'detail_route_post')
                                       ]):
-            route = decorator_routes[i]
+            #route = decorator_routes[i]
+            route = get_route(endpoint.method_name)
             # check url listing
             method_name = endpoint.method_name
             url_path = endpoint.url_path
@@ -509,7 +518,7 @@ class TestDynamicListAndDetailRouter(TestCase):
     def test_list_and_detail_route_decorators(self):
         self._test_list_and_detail_route_decorators(DynamicListAndDetailViewSet)
 
-    def test_inherited_list_and_detail_route_decorators(self):
+    def _test_inherited_list_and_detail_route_decorators(self):
         self._test_list_and_detail_route_decorators(SubDynamicListAndDetailViewSet)
 
 

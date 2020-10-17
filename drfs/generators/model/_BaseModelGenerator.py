@@ -1,10 +1,9 @@
 from django_model_changes import ChangesMixin
-import os
+import os, sys, warnings
 
 from ... import helpers
 
-
-
+IS_LOADDATA_MODE = sys.argv[1:2] == ['loaddata']
 
 
 class MetaAbstract:
@@ -27,9 +26,13 @@ class BaseModelGenerator(object):
         self.model_name = str(model_name)
         self.module_name = str(module_name)
         self.mixin_path = None
+        if isinstance(model_definition.get('base', None), list):
+            return
+        # DEPRECATED
         if model_path:
             mixin_path = os.path.dirname(os.path.dirname(model_path))
             if os.path.isfile(os.path.join(mixin_path, 'model_mixins', self.model_name + '.py')):
+                warnings.warn("Do not use model mixins outside of base definition for model!", DeprecationWarning)
                 from django.conf import settings
                 mixin_path = mixin_path.replace(settings.BASE_DIR, '').split('dist-packages')[-1]
                 mixin_path = '.'.join(mixin_path.split('/'))
@@ -84,34 +87,33 @@ class BaseModelGenerator(object):
             )
 
 
-        base_class = helpers.import_class(
-            self.model_definition.get('base', self.default_model_class)
-        )
-        mixin = None
+        base_class_names = self.model_definition.get('base', self.default_model_class)
+        if not isinstance(base_class_names, list):
+            base_class_names = [base_class_names]
         if self.mixin_path:
+            # DEPRECATED
+            base_class_names = [self.mixin_path] + base_class_names
+
+
+        classes = []
+        for name in base_class_names:
             try:
-                mixin = helpers.import_class(self.mixin_path)
+                classes.append(helpers.import_class(name))
             except ImportError:
-                mixin = None
+                warnings.warn("Failed to import '%s' module for '%s' model" % (name, self.model_name))
+                continue
+
 
         if self.model_definition.get('options', {}).get('abstract', False):
             fields['Meta'] = MetaAbstract
-            if mixin:
-                model_cls = type(self.model_name, (mixin, base_class), fields)
-            else:
-                model_cls = type(self.model_name, (base_class,), fields)
+            model_cls = type(self.model_name, tuple(classes), fields)
             model_cls._meta.abstract = True
             return model_cls
 
+
         fields['Meta'] = MetaNoAbstract
-
-        classes = []
-        if mixin:
-            classes.append(mixin)
-        if self.model_definition.get('options', {}).get('changes', True):
+        if self.model_definition.get('options', {}).get('changes', True) and not IS_LOADDATA_MODE:
             classes.append(ChangesMixin)
-        classes.append(base_class)
-
         model_cls = type(self.model_name, tuple(classes), fields)
         setattr(model_cls, 'DRFS_MODEL_DEFINITION', self.model_definition)
         return model_cls

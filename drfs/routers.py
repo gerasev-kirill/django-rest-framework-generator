@@ -5,6 +5,7 @@ from rest_framework.routers import SimpleRouter as BaseSimpleRouter, DefaultRout
 from rest_framework.routers import flatten
 from . import helpers
 
+
 try:
     from django.urls import re_path
 except:
@@ -58,27 +59,32 @@ class ExtraAction:
 RouteDrfs = namedtuple('Route', ['url', 'mapping', 'name', 'detail', 'initkwargs', 'trailing_slash'])
 
 
+class UrlPatternList(list):
+    def get_url_pattern_by_name(self, name):
+        for item in self:
+            if item.name == name:
+                return item
+        return None
+
 
 
 class SimpleRouter(BaseSimpleRouter):
     def _get_viewset_extra_actions(self, viewset):
-        if hasattr(viewset, 'get_extra_actions'):
-            return viewset.get_extra_actions()
-        # DEPRECATED: drf < 3.8
         extra_actions = []
-
         for methodname in dir(viewset):
+            if methodname.startswith("__"):
+                continue
             attr = getattr(viewset, methodname)
-            httpmethods = getattr(attr, 'bind_to_methods', None)
-            if httpmethods:
-                httpmethods = [method.lower() for method in httpmethods]
+            mapping = getattr(attr, 'mapping', None)
+            if mapping:
                 extra_actions.append(ExtraAction(
                     url=getattr(attr, 'url', None),
                     detail=getattr(attr, 'detail', True),
+                    url_path=getattr(attr, 'url_path', None),
+                    url_name=getattr(attr, 'url_name', None),
                     name=getattr(attr, 'name', None),
+                    mapping=mapping,
                     kwargs=getattr(attr, 'kwargs', {}),
-                    mapping=getattr(attr, 'mapping', None),
-                    #mapping={httpmethod: methodname for httpmethod in httpmethods},
                     __name__=methodname,
                 ))
         return extra_actions
@@ -139,7 +145,7 @@ class SimpleRouter(BaseSimpleRouter):
                 routes.append(route)
 
         for full_url in dynamic_routes:
-            routes.append(dynamic_routes[full_url])
+            routes.insert(0, dynamic_routes[full_url])
         return routes
 
 
@@ -147,8 +153,8 @@ class SimpleRouter(BaseSimpleRouter):
     def _get_dynamic_route(self, route, action, known_routes={}):
         initkwargs = route.initkwargs.copy()
         initkwargs.update(action.kwargs)
+        url_path = escape_curly_brackets(action.url_path)
         if helpers.rest_framework_version >= (3,9,0):
-            url_path = escape_curly_brackets(action.url_path)
             route_kwargs = {
                 'url': route.url.replace('{url_path}', url_path),
                 'mapping': action.mapping,
@@ -159,12 +165,10 @@ class SimpleRouter(BaseSimpleRouter):
             }
         else:
             # DEPRECATED: drf < 3.9
-            url_path = escape_curly_brackets(initkwargs.pop("url_path", None) or action.__name__)
-            url_name = initkwargs.pop("url_name", None) or url_path
             route_kwargs = {
                 'url': replace_methodname(route.url, url_path),
                 'mapping': action.mapping,
-                'name': replace_methodname(route.name, url_name),
+                'name': replace_methodname(route.name, action.url_name),
                 'trailing_slash': initkwargs.pop("trailing_slash", None),
                 'detail': action.detail,
                 'initkwargs': initkwargs,
@@ -190,7 +194,7 @@ class SimpleRouter(BaseSimpleRouter):
         """
         Use the registered viewsets to generate a list of URL patterns.
         """
-        ret = []
+        ret = UrlPatternList()
 
         for prefix, viewset, basename in self.registry:
             lookup = self.get_lookup_regex(viewset)
