@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
 import django, json, copy
+from django.conf import settings
 from rest_framework.serializers import CharField
 from .validators import EmbeddedValidator
 
 
-if django.VERSION >= (3,1,0):
+if django.VERSION >= (3,1,0) and getattr(settings, 'DRFS_USE_NATIVE_JSON_FIELD', False):
     from django.db.models import JSONField as JSONFieldBase
     from django.core.serializers.json import DjangoJSONEncoder
 
@@ -66,9 +67,15 @@ if django.VERSION >= (3,1,0):
             )
 
 else:
-    from jsonfield.fields import JSONFieldBase, models
+    try:
+        from jsonfield.fields import JSONFieldBase
+        from django.db import models
+        json_field_classes = [JSONFieldBase, models.TextField]
+    except ImportError:
+        from jsonfield.fields import JSONField as JSONFieldBase
+        json_field_classes = [JSONFieldBase]
 
-    class JSONField(JSONFieldBase, models.TextField):
+    class JSONField(*json_field_classes):
         def __init__(self, *args, encoder=None, decoder=None, **kwargs):
             super(JSONField, self).__init__(*args, **kwargs)
 

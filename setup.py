@@ -11,24 +11,16 @@ requirements = [
     'djangorestframework',
     'Pillow>=4.2.1',
     'schema>=0.6.7',
+    'jsonfield>=3.1.0'
 ]
 
-if sys.version_info[0] == 2:
-    requirements.append('django-model-changes==0.15')
-else:
+if sys.version_info[0] >= 3:
     requirements.append('django-model-changes-py3==0.14.1')
+else:
+    requirements.append('django-model-changes==0.15')
 
-try:
-    import django
-    if django.VERSION >= (3,1,0):
-        pass
-    else:
-        requirements.append('jsonfield')
-except ImportError:
-    if sys.version_info >= (3,8,0):
-        requirements[0] = 'Django>=3.1'
-    else:
-        requirements.append('jsonfield')
+if sys.version_info >= (3,8,0):
+    requirements[0] = 'Django>=3.1'
 
 setup(
     name='django-rest-framework-generator',
