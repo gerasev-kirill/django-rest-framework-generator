@@ -30,11 +30,16 @@ class BaseSerializerGenerator(object):
             for field in self.model_fields
         ]
         visible_fields = kwargs.get('visible_fields', None)
-        hidden_fields = kwargs.get('hidden_fields', self.model_definition.get('hidden', None))
+
+        hidden_fields = kwargs.get(
+            'hidden_fields',
+            self.model_definition.get('serializer', {}).get('hidden', None)
+        )
         if visible_fields and hidden_fields:
             raise ValueError(
                 "You cant use both visible_fields and hidden_fields options with model '"+ self.model_name +"' for serializer"
             )
+
 
         if visible_fields:
             for name in all_fields:
@@ -50,8 +55,19 @@ class BaseSerializerGenerator(object):
                 list(self.model_definition.get('relations', {}).items())
 
             for field_name, field_params in modeldef_fields:
-                if field_params.get('hidden', False) and field_name in all_fields:
+                if field_params.get('serializer', {}).get('hidden', False) and field_name in all_fields:
                     self.allowed_fields.remove(field_name)
+        # DeprecationError
+        # удалить после миграции всех проектов на новые либы
+        if 'hidden' in self.model_definition:
+            raise ValueError("Property 'hidden' should not be set on root of model definition for '%s' model. Place it as 'serializer.hidden' property" % model_class.__name__)
+        for field_name, field_params in list(self.model_definition.get('properties', {}).items()) + list(self.model_definition.get('relations', {}).items()):
+            if '_serializer' in field_params:
+                raise ValueError("Property '_serializer' for model '%s' is not allowed anymore. Rename it to 'serializer'" % model_class.__name__)
+            if 'hidden' in field_params:
+                raise ValueError("Property 'hidden' should not be set inside django field property '%s' for '%s' model. Place it inside 'serializer' property for django field definition" % (
+                    field_name, model_class.__name__
+                ))
 
 
     def get_model_class(self, model_path):
@@ -88,7 +104,7 @@ class BaseSerializerGenerator(object):
                 if django_field.__class__ == k:
                     serializer_class = v
 
-        if params.get('_serializer', {}).get('read_only', False):
+        if params.get('serializer', {}).get('read_only', False):
             serializer_kwargs['read_only'] = True
         return serializer_class, serializer_args, serializer_kwargs
 
@@ -112,7 +128,7 @@ class BaseSerializerGenerator(object):
                     *serializer_args,
                     **serializer_kwargs
                 )
-            if modeldef_fields.get(field.name, {}).get('_serializer', {}).get('read_only', False):
+            if modeldef_fields.get(field.name, {}).get('serializer', {}).get('read_only', False):
                 read_only_fields.append(field.name)
 
         for fieldName, field_params in serializer_general_params.get('fields', {}).items():
@@ -131,7 +147,7 @@ class BaseSerializerGenerator(object):
                             **serializer_kwargs
                         )
 
-            if field_params.get('hidden', False) and fieldName in self.allowed_fields:
+            if field_params.get('serializer', {}).get('hidden', False) and fieldName in self.allowed_fields:
                 self.allowed_fields.remove(fieldName)
 
 

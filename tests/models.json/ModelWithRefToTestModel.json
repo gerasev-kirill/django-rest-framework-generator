@@ -8,7 +8,7 @@
             "type": "belongsTo",
             "model": "TestModel2",
             "on_delete": "CASCADE",
-            "_serializer": {
+            "serializer": {
                 "returns": "property: id"
             }
         }

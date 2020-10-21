@@ -6,7 +6,7 @@
             "type": "belongsTo",
             "model": "django.contrib.auth.models.User",
             "on_delete": "CASCADE",
-            "_serializer": {
+            "serializer": {
                 "returns": "property: id"
             }
         }

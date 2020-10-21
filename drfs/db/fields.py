@@ -89,6 +89,10 @@ else:
                 kwargs['validators'] = kwargs.get('validators', None) or []
                 kwargs['validators'].append(EmbeddedValidator(self.embedded_model_name))
             super(BaseEmbedded, self).__init__(*args, **kwargs)
+            if hasattr(self, 'encoder_kwargs'):
+                self.encoder_kwargs['ensure_ascii'] = False
+            else:
+                self.dump_kwargs['ensure_ascii'] = False
 
         def _validate_value(self, value):
             raise NotImplementedError
@@ -97,9 +101,10 @@ else:
             """Convert JSON object to a string"""
             if self.null and value is None:
                 return None
-            return json.dumps(
+            return super(BaseEmbedded, self).get_db_prep_value(
                 self._validate_value(value),
-                **self.dump_kwargs
+                connection,
+                prepared=prepared
             )
 
 

@@ -12,14 +12,18 @@
             "max": 90,
             "min": 3,
             "description": "My int field",
-            "hidden": true
+            "serializer":{
+                "hidden": true
+            }
         },
         "string_field":{
             "type": "string",
             "default": "Hello test string",
             "max": 20,
             "min": 10,
-            "hidden": true
+            "serializer":{
+                "hidden": true
+            }
         },
         "bool_field":{
             "type": "bool",
@@ -28,12 +32,16 @@
         "object_field":{
             "type": "object",
             "default": {},
-            "hidden": true
+            "serializer":{
+                "hidden": true
+            }
         },
         "array_field":{
             "type": "array",
             "default": [],
-            "hidden": false
+            "serializer":{
+                "hidden": false
+            }
         }
     }
 }

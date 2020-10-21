@@ -96,10 +96,14 @@ class ViewsetGenFactory(type):
         )
         name = str(model_name+'_ViewSet')
         params = getViewsetParams(model_class, kwargs)
-        if not kwargs.get('acl', None):
-            model_acl = DRFS_MODEL_DEFINITION.get('acl', [])
-        else:
+
+        if 'acl' in DRFS_MODEL_DEFINITION:
+            raise ValueError("Property 'acl' should not be set on root of model definition for '%s' model. Place it inside 'viewset' property" % model_name)
+        if kwargs.get('acl', None):
             model_acl = kwargs.get('acl')
+        else:
+            model_acl = DRFS_MODEL_DEFINITION.get('viewset', {}).get('acl', [])
+
         new_cls = type(name, tuple(classes), {})
 
         # params.keys - RuntimeError: dictionary changed size during iteration

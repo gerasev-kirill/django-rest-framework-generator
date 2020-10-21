@@ -6,7 +6,7 @@
             "type": "belongsTo",
             "model": "django.contrib.auth.models.User",
             "on_delete": "CASCADE",
-            "_serializer": {
+            "serializer": {
                 "visible_fields": ["id", "username", "email"],
                 "ignore_object_doesnt_exist": true
             }
@@ -15,7 +15,7 @@
             "type": "hasOne",
             "model": "TestModel",
             "relationName": "TestModelWithRelations_Nested_by_hasOne",
-            "_serializer":{
+            "serializer":{
                 "visible_fields": ["id", "string_field"]
             }
         },
@@ -23,7 +23,7 @@
             "type": "hasMany",
             "model": "TestModel",
             "relationName": "TestModelWithRelations_Nested_by_hasMany",
-            "_serializer":{
+            "serializer":{
                 "visible_fields": ["id", "string_field", "int_field"]
             }
         }

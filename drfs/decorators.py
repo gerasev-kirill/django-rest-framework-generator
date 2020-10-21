@@ -1,5 +1,6 @@
 from functools import wraps
 from rest_framework import exceptions
+from django.conf import settings
 from .permissions.acl_resolver import PermissionResolver
 from . import helpers
 
@@ -89,7 +90,13 @@ def drf_action_decorator(func, model_acl):
 
         resolved_permission = Resolver.resolve_permission(**resolver_kwargs)
         if resolved_permission == 'DENY':
-            raise exceptions.PermissionDenied(detail="DRFS: Permission Denied")
+            detail = "DRFS: Permission Denied by acl"
+            if settings.DEBUG:
+                if not self.request.user.is_authenticated:
+                    detail += " (user not authenticated)"
+                else:
+                    detail += " (for user %s)" % self.request.user.username
+            raise exceptions.PermissionDenied(detail=detail)
         return func(self, *args, **kwargs)
 
 

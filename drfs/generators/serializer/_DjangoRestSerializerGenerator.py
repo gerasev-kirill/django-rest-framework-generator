@@ -77,7 +77,7 @@ class DjangoRestSerializerGenerator(BaseSerializerGenerator):
 
 
     def build_relational_serializer(self, django_field, params):
-        _params = params.get('_serializer', None)
+        _params = params.get('serializer', None)
         if not _params or params.get('type', None) not in self.model_relation_types:
             return None, [], {}
 
@@ -148,7 +148,7 @@ class DjangoRestSerializerGenerator(BaseSerializerGenerator):
                 field_name,
                 relation_info
             )
-            if field_params.get('_serializer', {}).get('ignore_object_doesnt_exist', False) and \
+            if field_params.get('serializer', {}).get('ignore_object_doesnt_exist', False) and \
                 field_class == rest_relations.PrimaryKeyRelatedField:
                 return SoftPrimaryKeyRelatedField, field_kwargs
             return field_class, field_kwargs
