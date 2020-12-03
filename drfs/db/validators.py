@@ -75,6 +75,7 @@ class EmbeddedValidator:
             self.schema[name] = validators
 
         self.schema = schema.Schema(self.schema)
+        self.params = params
 
 
 
