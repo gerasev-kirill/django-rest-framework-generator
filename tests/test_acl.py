@@ -19,10 +19,9 @@ class ViewsetAcl(TestCase):
             username='admin',
             email='admin@mail.com',
             password='admin',
-            is_staff=True
+            is_superuser=True
         )
 
-    '''
     def test_everyone(self):
         def test_user_deny(user):
             request.user = user
@@ -33,7 +32,7 @@ class ViewsetAcl(TestCase):
             )
             self.assertEqual(
                 response.data['detail'],
-                "DRFS: Permission Denied"
+                "DRFS: Permission denied by acl"
             )
 
         def test_user_allow(user):
@@ -93,7 +92,7 @@ class ViewsetAcl(TestCase):
         )
         self.assertEqual(
             response.data['detail'],
-            "DRFS: Permission Denied"
+            "DRFS: Permission denied by acl"
         )
 
         request.user = self.user
@@ -137,7 +136,7 @@ class ViewsetAcl(TestCase):
         )
         self.assertEqual(
             response.data['detail'],
-            "DRFS: Permission Denied"
+            "DRFS: Permission denied by acl"
         )
 
 
@@ -172,7 +171,7 @@ class ViewsetAcl(TestCase):
         )
         self.assertEqual(
             response.data['detail'],
-            "DRFS: Permission Denied"
+            "DRFS: Permission denied by acl"
         )
         obj.delete()
 
@@ -216,10 +215,77 @@ class ViewsetAcl(TestCase):
         )
         self.assertEqual(
             response.data['detail'],
-            "DRFS: Permission Denied"
+            "DRFS: Permission denied by acl"
         )
 
-    '''
+
+    def test_django_permissions(self):
+        modelClass = models.TestModel
+        viewset = drfs.generate_viewset(modelClass, acl = [{
+            "principalId": "$everyone",
+            "property": ".+",
+            "permission": "DENY"
+        },{
+            "principalId": "$djangoPermissions",
+            "requiredCodename": "tests.view_testmodel",
+            "property": ".+",
+            "permission": "ALLOW"
+        }])
+        request = self.factory.get('/')
+
+        # anon
+        request.user = self.anonymous
+        response = viewset.as_view({'get': 'list'})(request)
+        self.assertEqual(
+            response.status_code,
+            403
+        )
+        self.assertEqual(
+            response.data['detail'],
+            "DRFS: Permission denied by acl"
+        )
+        # user without permission
+        request.user = self.user
+        response = viewset.as_view({'get': 'list'})(request)
+        self.assertEqual(
+            response.status_code,
+            403
+        )
+        self.assertEqual(
+            response.data['detail'],
+            "DRFS: Permission denied by acl"
+        )
+        # user with permission
+        from django.contrib.auth.models import Permission
+        user = self.user
+        permission = Permission.objects.get(codename='view_testmodel')
+        user.user_permissions.add(permission)
+
+        request.user = User.objects.get(username='test')
+        response = viewset.as_view({'get': 'list'})(request)
+        self.assertEqual(
+            response.status_code,
+            200
+        )
+        self.assertEqual(
+            response.data,
+            []
+        )
+
+        # admin (allow all)
+        request.user = self.admin
+        response = viewset.as_view({'get': 'list'})(request)
+        self.assertEqual(
+            response.status_code,
+            200
+        )
+        self.assertEqual(
+            response.data,
+            []
+        )
+
+
+
     def test_complex_acl(self):
         def test_user(user, apiPoint, expectCode):
             request.user = user

@@ -27,19 +27,19 @@ class EveryoneDeny(permissions.BasePermission):
 
 class Unauthenticated(permissions.BasePermission):
     def has_permission(self, request, view):
-        return request.user.is_anonymous()
+        return not request.user.is_authenticated
 
     def has_object_permission(self, request, view, obj):
-        return request.user.is_anonymous()
+        return not request.user.is_authenticated
 
 #
 
 class UnauthenticatedDeny(permissions.BasePermission):
     def has_permission(self, request, view):
-        return not request.user.is_anonymous()
+        return request.user.is_authenticated
 
     def has_object_permission(self, request, view, obj):
-        return not request.user.is_anonymous()
+        return request.user.is_authenticated
 
 
 #
@@ -49,19 +49,19 @@ class UnauthenticatedDeny(permissions.BasePermission):
 
 class Authenticated(permissions.BasePermission):
     def has_permission(self, request, view):
-        return not request.user.is_anonymous()
+        return request.user.is_authenticated
 
     def has_object_permission(self, request, view, obj):
-        return not request.user.is_anonymous()
+        return request.user.is_authenticated
 
 #
 
 class AuthenticatedDeny(permissions.BasePermission):
     def has_permission(self, request, view):
-        return request.user.is_anonymous()
+        return not request.user.is_authenticated
 
     def has_object_permission(self, request, view, obj):
-        return request.user.is_anonymous()
+        return not request.user.is_authenticated
 
 #
 #

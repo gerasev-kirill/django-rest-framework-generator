@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 import re
-from .acl import EveryoneAclResolver, UnauthenticatedAclResolver, AuthenticatedAclResolver, OwnerAclResolver, AdminAclResolver
+from .acl import EveryoneAclResolver, UnauthenticatedAclResolver, AuthenticatedAclResolver, OwnerAclResolver, AdminAclResolver, DjangoPermissionsAclResolver
 
 
 regex_special_chars = ['(', ')', '.', '+', '^', '$', '*', '{', '}', '[', ']', '|', '?']
@@ -27,14 +27,17 @@ class PermissionResolver(object):
         '$unauthenticated': UnauthenticatedAclResolver,
         '$authenticated': AuthenticatedAclResolver,
         '$owner': OwnerAclResolver,
-        '$admin': AdminAclResolver
+        '$admin': AdminAclResolver,
+        '$djangoPermissions': DjangoPermissionsAclResolver
     }
 
     def __init__(self):
         from django.conf import settings
         from ..helpers import import_class
 
-        for rName, cl in getattr(settings, 'DRFS_ACL_RESOLVERS', {}).items():
+        if hasattr(settings, 'DRFS_ACL_RESOLVERS'):
+            raise ValueError('DRFS_ACL_RESOLVERS is not allowed anymore in settings. Use DRF_GENERATOR.acl_resolvers')
+        for rName, cl in getattr(settings, 'DRF_GENERATOR', {}).get('acl_resolver', {}).items():
             self.RESOLVER_MAP[rName] = import_class(cl)
 
 
@@ -43,30 +46,34 @@ class PermissionResolver(object):
         return r_cls()
 
 
-    def resolve_permission(self, request=None, property_func=None, model_acl=[], drf={}, obj=None):
+    def resolve_permission(self, request=None, view=None, func_name=None, func_params={}, obj=None, model_acl=[]):
         if not model_acl:
             return 'ALLOW'
         resolved = 'ALLOW'
 
         for acl in model_acl:
-            if not isinstance(acl['property'], (list, tuple)):
-                properties = [acl['property']]
-            else:
-                properties = acl['property']
+            properties = acl['property']
+            if not isinstance(properties, (list, tuple)):
+                properties = [properties]
+
             for p in properties:
-                if is_func_name(p, property_func):
-                    r = self.get_resolver_instance(acl['principalId'])
-                    permission = r.get_permission(
-                        request=request,
-                        drf=drf,
-                        obj=obj
-                    )
-                    if permission:
-                        resolved = acl['permission']
-                        #if acl['principalId'] == '$unauthenticated' and permission == 'DENY':
-                        #    raise exceptions.NotAuthenticated("DRFS: Not Authenticated")
-                        if resolved == 'ALLOW':
-                            break
+                if not is_func_name(p, func_name):
+                    continue
+                r = self.get_resolver_instance(acl['principalId'])
+                permission = r.get_permission(
+                    request=request,
+                    view=view,
+                    func_name=func_name,
+                    func_params=func_params,
+                    obj=obj,
+                    acl=acl
+                )
+                if permission:
+                    resolved = acl['permission']
+                    #if acl['principalId'] == '$unauthenticated' and permission == 'DENY':
+                    #    raise exceptions.NotAuthenticated("DRFS: Not Authenticated")
+                    if resolved == 'ALLOW':
+                        break
             if resolved == 'ALLOW':
                 break
         return resolved

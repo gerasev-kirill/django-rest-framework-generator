@@ -5,7 +5,7 @@ from rest_framework.serializers import CharField
 from .validators import EmbeddedValidator
 
 
-if django.VERSION >= (3,1,0) and getattr(settings, 'DRFS_USE_NATIVE_JSON_FIELD', False):
+if django.VERSION >= (3,1,0) and getattr(settings, 'DRF_GENERATOR_USE_NATIVE_JSON_FIELD', False):
     from django.db.models import JSONField as JSONFieldBase
     from django.core.serializers.json import DjangoJSONEncoder
 

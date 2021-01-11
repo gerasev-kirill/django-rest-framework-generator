@@ -77,8 +77,9 @@ def drf_action_decorator(func, model_acl):
     def wrapper(self, *args, **kwargs):
         lookup_url_kwarg = self.lookup_url_kwarg or self.lookup_field
         resolver_kwargs = {
-            'property_func': func.__name__,
-            'drf': {
+            'view': self,
+            'func_name': func.__name__,
+            'func_params': {
                 'kwargs': kwargs,
                 'args': args,
             },
@@ -90,9 +91,9 @@ def drf_action_decorator(func, model_acl):
 
         resolved_permission = Resolver.resolve_permission(**resolver_kwargs)
         if resolved_permission == 'DENY':
-            detail = "DRFS: Permission Denied by acl"
+            detail = "DRFS: Permission denied by acl"
             if settings.DEBUG:
-                if not self.request.user.is_authenticated:
+                if not self.request.user or not self.request.user.is_authenticated:
                     detail += " (user not authenticated)"
                 else:
                     detail += " (for user %s)" % self.request.user.username
@@ -125,8 +126,6 @@ if helpers.rest_framework_version >= (3,8,0):
 else:
     # DEPRECATED
     from rest_framework.decorators import list_route, detail_route
-
-
 
     def action(methods=None, detail=None, **kwargs):
         methods = ['get'] if (methods is None) else methods

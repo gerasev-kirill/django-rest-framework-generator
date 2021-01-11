@@ -1,5 +1,3 @@
-from rest_framework import viewsets
-from django.db import models
 from django.conf import settings
 import six
 
