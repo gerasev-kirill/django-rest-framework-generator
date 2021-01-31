@@ -70,14 +70,17 @@ else:
     try:
         from jsonfield.fields import JSONFieldBase
         from django.db import models
-        json_field_classes = [JSONFieldBase, models.TextField]
+
+        class JSONField(JSONFieldBase, models.TextField):
+            def __init__(self, *args, encoder=None, decoder=None, **kwargs):
+                super(JSONField, self).__init__(*args, **kwargs)
+
     except ImportError:
         from jsonfield.fields import JSONField as JSONFieldBase
-        json_field_classes = [JSONFieldBase]
 
-    class JSONField(*json_field_classes):
-        def __init__(self, *args, encoder=None, decoder=None, **kwargs):
-            super(JSONField, self).__init__(*args, **kwargs)
+        class JSONField(JSONFieldBase):
+            def __init__(self, *args, encoder=None, decoder=None, **kwargs):
+                super(JSONField, self).__init__(*args, **kwargs)
 
     class BaseEmbedded(JSONField):
         embedded_validator = None
