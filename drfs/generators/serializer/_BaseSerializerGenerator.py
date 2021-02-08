@@ -1,12 +1,5 @@
-from ... import helpers
-
-try:
-    from drf_loopback_js_filters.serializers import LoopbackJsSerializerMixin
-except:
-    class LoopbackJsSerializerMixin(object):
-        pass
-
-
+from drfs import helpers
+from drfs.serializers.rest import BaseModelSerializer
 
 
 class BaseSerializerGenerator(object):
@@ -150,11 +143,16 @@ class BaseSerializerGenerator(object):
             if field_params.get('serializer', {}).get('hidden', False) and fieldName in self.allowed_fields:
                 self.allowed_fields.remove(fieldName)
 
+        expandable_fields = self.model_definition.get('serializer', {}).get('expandableFields', {}).copy()
+        for k in expandable_fields:
+            if k not in self.allowed_fields:
+                del expandable_fields[k]
 
         meta = {
             'model': self.model_class,
             'fields': self.allowed_fields,
-            'read_only_fields': read_only_fields
+            'read_only_fields': read_only_fields,
+            'expandable_fields': expandable_fields
         }
 
         class DRFS_Serializer(object):
@@ -162,6 +160,7 @@ class BaseSerializerGenerator(object):
                 model = meta['model']
                 fields = meta['fields']
                 read_only_fields = meta['read_only_fields']
+                expandable_fields = meta['expandable_fields']
 
         base_class = []
         if serializer_general_params.get('base', None):
@@ -172,7 +171,7 @@ class BaseSerializerGenerator(object):
         elif self.default_serializer_class:
             base_class = [self.default_serializer_class]
 
-        base_class.insert(0, LoopbackJsSerializerMixin)
+        base_class.insert(0, BaseModelSerializer)
         base_class.append(DRFS_Serializer)
 
         _cls = type(self.model_name, tuple(base_class), fields_serializers)

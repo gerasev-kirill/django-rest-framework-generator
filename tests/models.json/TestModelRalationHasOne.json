@@ -5,10 +5,7 @@
         "has_one_field":{
             "type": "hasOne",
             "model": "django.contrib.auth.models.User",
-            "on_delete": "CASCADE",
-            "serializer": {
-                "returns": "property: id"
-            }
+            "on_delete": "CASCADE"
         }
     }
 }

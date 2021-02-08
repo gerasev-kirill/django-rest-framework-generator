@@ -1,6 +1,7 @@
-from django.test import TestCase
+from django.test import TestCase, RequestFactory
 from django.contrib.auth.models import User as UserModel
 from django.db.models.fields.related import ForeignKey
+from rest_framework import exceptions
 import drfs, json
 
 
@@ -299,3 +300,150 @@ class Relations(TestCase):
                 }
             }
         )
+
+
+
+class SerializerExpandable(TestCase):
+    def setUp(self):
+        self.factory = RequestFactory()
+        self.user = UserModel.objects.create(
+            username='serializer_relations_user',
+            email='serializer_relations_user@mail.com'
+        )
+        self.user2 = UserModel.objects.create(
+            username='serializer_relations_user2',
+            email='serializer_relations_user2@mail.com'
+        )
+        TestModel = drfs.generate_model('TestModel.json')
+        self.m1 = TestModel.objects.create(int_field=100)
+        self.m2 = TestModel.objects.create(int_field=200)
+        self.test_model_class = drfs.generate_model('TestModelWithRelations_Flat.json')
+        self.orig_test_model_definition = self.test_model_class.DRFS_MODEL_DEFINITION
+
+        self.test1 = self.test_model_class.objects.create(belongs_to_field=self.user)
+        self.test1.has_many.add(self.m1, self.m2)
+        self.test2 = self.test_model_class.objects.create(belongs_to_field=self.user2)
+        self.test2.has_many.add(self.m1)
+        self.test3 = self.test_model_class.objects.create()
+        self.test3.has_many.add(self.m2)
+        self.maxDiff = None
+
+
+    def test_expand_simple(self):
+        model = self.test_model_class
+        model.DRFS_MODEL_DEFINITION = self.orig_test_model_definition.copy()
+        model.DRFS_MODEL_DEFINITION['serializer'] = {
+            'expandableFields': {
+                'belongs_to_field': {
+                    'visible_fields': ['id', 'username']
+                }
+            }
+        }
+        serializerClass = drfs.generate_serializer(model)
+        serializerClass.Meta.raise_expand_exception = True
+
+        request = self.factory.get('/')
+
+        # invalid expansion
+        request.query_params = {'expand': 'bloblob'}
+        ser = serializerClass(self.test1, context={'request': request})
+        self.assertRaisesMessage(
+            exceptions.ValidationError,
+            "Query param 'expand' is invalid JSON",
+            ser.get_fields
+        )
+
+        request.query_params = {'expand': '[]'}
+        ser = serializerClass(self.test1, context={'request': request})
+        self.assertRaisesMessage(
+            exceptions.ValidationError,
+            "Query param 'expand' is invalid. Allowed dict only",
+            ser.get_fields
+        )
+
+        # unknown field
+        request.query_params = {'expand': json.dumps({'unknown_field': True})}
+        ser = serializerClass(self.test1, context={'request': request})
+        self.assertRaisesMessage(
+            exceptions.ValidationError,
+            "Expand: field 'unknown_field' is not expandable",
+            ser.get_fields
+        )
+
+        # known field but not in expansion
+        request.query_params = {'expand': json.dumps({'has_many': True})}
+        ser = serializerClass(self.test1, context={'request': request})
+        self.assertRaisesMessage(
+            exceptions.ValidationError,
+            "Expand: field 'has_many' is not expandable",
+            ser.get_fields
+        )
+
+        # user1
+        request.query_params = {'expand': json.dumps({'belongs_to_field': True})}
+        ser = serializerClass(self.test1, context={'request': request})
+        self.assertDictEqual(ser.data, {
+            "id": 1,
+            "belongs_to_field": 1,
+            "$belongs_to_field": {
+                "id": 1,
+                "username": "serializer_relations_user"
+            },
+            "has_one": None,
+            "has_many": [
+                1,
+                2
+            ]
+        })
+
+        # no user
+        request.query_params = {'expand': json.dumps({'belongs_to_field': True})}
+        ser = serializerClass(self.test3, context={'request': request})
+        self.assertDictEqual(ser.data, {
+            "id": 3,
+            "belongs_to_field": None,
+            "$belongs_to_field": None,
+            "has_one": None,
+            "has_many": [
+                2
+            ]
+        })
+
+
+        # many-to-many
+        model.DRFS_MODEL_DEFINITION = self.orig_test_model_definition.copy()
+        model.DRFS_MODEL_DEFINITION['serializer'] = {
+            'expandableFields': {
+                'belongs_to_field': {
+                    'visible_fields': ['id', 'username']
+                },
+                'has_many': {
+                    'visible_fields': ['id', 'int_field']
+                }
+            }
+        }
+        serializerClass = drfs.generate_serializer(model)
+        serializerClass.Meta.raise_expand_exception = True
+
+        request.query_params = {'expand': json.dumps({'belongs_to_field': True, 'has_many': True})}
+        ser = serializerClass(self.test1, context={'request': request})
+        self.assertDictEqual(ser.data, {
+            "id": 1,
+            "belongs_to_field": 1,
+            "$belongs_to_field": {
+                "id": 1,
+                "username": "serializer_relations_user"
+            },
+            "has_one": None,
+            "has_many": [1,2],
+            "$has_many": [
+                {
+                    "id": 1,
+                    "int_field": 100
+                },
+                {
+                    "id": 2,
+                    "int_field": 200
+                }
+            ]
+        })

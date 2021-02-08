@@ -1,7 +1,16 @@
+import json
 from rest_framework import serializers
 from rest_framework.authtoken import serializers as authtoken_serializers
 from django.utils.translation import ugettext_lazy as _
 from django.contrib.auth import authenticate
+from rest_framework.exceptions import ValidationError
+
+try:
+    from drf_loopback_js_filters.serializers import LoopbackJsSerializerMixin
+except ImportError:
+    class LoopbackJsSerializerMixin(object):
+        pass
+
 
 
 
@@ -146,3 +155,69 @@ class UserRegisterUsernameAndEmailUniqueSerializer(UserRegisterSerializer):
             return False
         except:
             return True
+
+
+
+class BaseModelSerializer(LoopbackJsSerializerMixin):
+    def __init__(self, *args, **kwargs):
+        super(BaseModelSerializer, self).__init__(*args, **kwargs)
+
+
+    def get_fields(self, *args, **kwargs):
+        fields = super(BaseModelSerializer, self).get_fields(*args, **kwargs)
+        if not hasattr(self, '_context'):
+            return fields
+        request = self._context.get('request', {})
+        if not hasattr(request, 'query_params') or not request.query_params.get('expand', None):
+            return fields
+
+        def raise_exception(detail):
+            if getattr(self.Meta, 'raise_expand_exception', False):
+                raise ValidationError(detail)
+
+
+        try:
+            expansion = json.loads(request.query_params.get('expand'))
+        except:
+            raise_exception("Query param 'expand' is invalid JSON")
+            return fields
+        if not isinstance(expansion, dict):
+            raise_exception("Query param 'expand' is invalid. Allowed dict only")
+            return fields
+
+        expand_fields = []
+        expandable_fields = getattr(self.Meta, 'expandable_fields', None) or {}
+        for field in expansion or {}:
+            if not expansion[field] or field not in expandable_fields:
+                raise_exception("Expand: field '{name}' is not expandable".format(name=field))
+                continue
+            expand_fields.append(field)
+
+        if not expand_fields:
+            return fields
+
+        from drfs import generate_serializer
+
+        for field in expand_fields:
+            if field not in fields:
+                continue
+            has_queryset = False
+            has_many = False
+            if hasattr(fields[field], 'child_relation') and hasattr(fields[field].child_relation, 'queryset'):
+                queryset = fields[field].child_relation.queryset
+                has_queryset = True
+                has_many = True
+            if hasattr(fields[field], 'queryset'):
+                queryset = fields[field].queryset
+                has_queryset = True
+            if not has_queryset:
+                continue
+            serializer_class = generate_serializer(
+                queryset.model,
+                visible_fields=self.Meta.expandable_fields[field].get('visible_fields', []),
+                hidden_fields=[]
+            )
+            if self.Meta.expandable_fields[field].get('read_only', False):
+                serializer_class.Meta.read_only_fields = self.Meta.expandable_fields[field].get('visible_fields', [])
+            fields['$'+field] = serializer_class(many=has_many, source=field)
+        return fields

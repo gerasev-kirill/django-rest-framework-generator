@@ -82,7 +82,6 @@ class FindOneMixin(TestCase):
 
         request = self.factory.get('/')
         response = FindOneMixinTest.as_view({'get': 'find_one'})(request)
-
         self.assertEqual(
             response.status_code,
             200
