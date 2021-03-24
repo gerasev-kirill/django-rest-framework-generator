@@ -10,5 +10,5 @@ schema==0.6.7
 pytest
 
 Django==3.1.2
-djangorestframework==3.12.1
+djangorestframework==3.11.2
 django-filter==2.4.0

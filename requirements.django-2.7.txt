@@ -1,7 +1,7 @@
 Django==1.11
 argparse==1.2.1
 django-filter==1.1.0
-djangorestframework==3.6.3
+djangorestframework==3.11.2
 jsonfield==1.0.3
 wsgiref==0.1.2
 Pillow>=4.2.1
