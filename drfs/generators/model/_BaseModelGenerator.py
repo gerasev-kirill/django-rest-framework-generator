@@ -1,4 +1,3 @@
-from django_model_changes import ChangesMixin
 import os, sys, warnings
 
 from ... import helpers
@@ -93,6 +92,9 @@ class BaseModelGenerator(object):
         if self.mixin_path:
             # DEPRECATED
             base_class_names = [self.mixin_path] + base_class_names
+        # DEPRECATED
+        if 'changes' in self.model_definition.get('options', {}):
+            raise Exception("DRFS - generators: Changes mixin is not allowed anymore")
 
 
         classes = []
@@ -112,8 +114,6 @@ class BaseModelGenerator(object):
 
 
         fields['Meta'] = MetaNoAbstract
-        if self.model_definition.get('options', {}).get('changes', True) and not IS_LOADDATA_MODE:
-            classes.append(ChangesMixin)
         model_cls = type(self.model_name, tuple(classes), fields)
         setattr(model_cls, 'DRFS_MODEL_DEFINITION', self.model_definition)
         return model_cls

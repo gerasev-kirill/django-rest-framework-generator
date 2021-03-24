@@ -257,8 +257,13 @@ class ViewsetAcl(TestCase):
         )
         # user with permission
         from django.contrib.auth.models import Permission
+        from django.contrib.contenttypes.models import ContentType
+        from .models import TestModel
         user = self.user
-        permission = Permission.objects.get(codename='view_testmodel')
+        permission, created = Permission.objects.get_or_create(
+            codename='view_testmodel',
+            content_type=ContentType.objects.get(model=TestModel.__name__.lower())
+        )
         user.user_permissions.add(permission)
 
         request.user = User.objects.get(username='test')

@@ -14,11 +14,6 @@ requirements = [
     'jsonfield>=3.1.0'
 ]
 
-if sys.version_info[0] >= 3:
-    requirements.append('django-model-changes-py3==0.14.1')
-else:
-    requirements.append('django-model-changes==0.15')
-
 if sys.version_info >= (3,8,0):
     requirements[0] = 'Django>=3.1'
 

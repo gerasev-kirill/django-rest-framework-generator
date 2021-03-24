@@ -243,7 +243,7 @@ class SimpleRouter(BaseSimpleRouter):
 
 class DefaultRouter(BaseDefaultRouter):
     def register(self, prefix, viewset, base_name=None, basename=None):
-        # старое название base_name (drf<3.11), новое - basename
+        # old name base_name (drf<3.11), new - basename
         basename = base_name or basename
         if basename is None:
             if hasattr(self, 'get_default_basename'):

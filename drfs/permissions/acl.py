@@ -4,7 +4,7 @@ import six
 
 class AclResolver(object):
     def get_permission(self, request=None, **kwargs):
-        raise NotADirectoryError
+        raise NotImplementedError
 
 
 class EveryoneAclResolver(AclResolver):
