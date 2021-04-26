@@ -322,7 +322,7 @@ class ViewsetAcl(TestCase):
                 return Response('success')
 
 
-        viewset = drfs.generate_viewset(modelClass, add_mixin=SpecialMixin, acl = [
+        viewset = drfs.generate_viewset(modelClass, mixins=[SpecialMixin], acl=[
             {
                 "principalId": "$everyone",
                 "property": ".+",

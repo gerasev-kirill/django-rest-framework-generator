@@ -70,7 +70,17 @@ class ViewsetGenFactory(type):
     def __new__(self, model_class, **kwargs):
         DRFS_MODEL_DEFINITION = getattr(model_class, 'DRFS_MODEL_DEFINITION', {})
         viewset_pref = DRFS_MODEL_DEFINITION.get('viewset', {})
+        if kwargs.get('add_mixin', None):
+            raise ValueError("Do not pass 'add_mixin' to viewset generator via kwargs! Use 'mixins' instead.")
 
+        mixins = []
+        for mixin in kwargs.get('mixins', None) or viewset_pref.get('mixins', None) or []:
+            if callable(mixin):
+                mixins.append(mixin)
+            else:
+                mixins.append(helpers.import_class(mixin))
+
+        '''
         if 'mixins' in kwargs:
             mixins = kwargs['mixins']
         else:
@@ -80,12 +90,14 @@ class ViewsetGenFactory(type):
                     helpers.import_class(m)
                 )
         if kwargs.get('add_mixin', None):
-            if isinstance(kwargs['add_mixin'], six.text_type) or isinstance(kwargs['add_mixin'], six.string_types):
-                mixins.append(
-                    helpers.import_class(kwargs['add_mixin'])
-                )
-            else:
-                mixins.append(kwargs['add_mixin'])
+            raise ValueError("Do not pass 'add_mixin' to viewset generator via kwargs! Use 'mixins' instead.")
+        if kwargs.get('mixins', None):
+            for m in kwargs['mixins']:
+                if isinstance(m, six.text_type) or isinstance(m, six.string_types):
+                    mixins.append(helpers.import_class(m))
+                else:
+                    mixins.append(m)
+        '''
 
         if viewset_pref.get('base', None):
             classes = [
