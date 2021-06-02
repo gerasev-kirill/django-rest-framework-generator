@@ -79,6 +79,8 @@ class DjangoOrmModelGenerator(BaseModelGenerator):
             field_kwargs['choices'] = fix_choices(params['choices'])
         if 'description' in params:
             field_kwargs['help_text'] = params['description']
+        if 'verbose_name' in params:
+            field_kwargs['verbose_name'] = params['verbose_name']
         if 'required' in params and params['required'] == False:
             field_kwargs['blank'] = True
             field_kwargs['null'] = True

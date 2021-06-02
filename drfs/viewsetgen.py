@@ -1,5 +1,4 @@
 from django.conf import settings
-import six
 from rest_framework.settings import api_settings as drf_api_settings
 from rest_framework.viewsets import ModelViewSet
 
@@ -56,12 +55,6 @@ def get_viewset_params(model_class, kwargs):
         'filter_fields': tuple(filter_fields),
         'permission_classes': [AllowEveryone]
     }
-    if REST_FRAMEWORK_HAS_DEFAULT_SCHEMA_CLASS and drf_api_settings.DEFAULT_SCHEMA_CLASS:
-        params['schema'] = drf_api_settings.DEFAULT_SCHEMA_CLASS(
-            tags=[model_class.__name__],
-            component_name=model_class.__name__,
-            #operation_id_base='',
-        )
     return params
 
 
@@ -79,25 +72,6 @@ class ViewsetGenFactory(type):
                 mixins.append(mixin)
             else:
                 mixins.append(helpers.import_class(mixin))
-
-        '''
-        if 'mixins' in kwargs:
-            mixins = kwargs['mixins']
-        else:
-            mixins = []
-            for m in viewset_pref.get('mixins', []):
-                mixins.append(
-                    helpers.import_class(m)
-                )
-        if kwargs.get('add_mixin', None):
-            raise ValueError("Do not pass 'add_mixin' to viewset generator via kwargs! Use 'mixins' instead.")
-        if kwargs.get('mixins', None):
-            for m in kwargs['mixins']:
-                if isinstance(m, six.text_type) or isinstance(m, six.string_types):
-                    mixins.append(helpers.import_class(m))
-                else:
-                    mixins.append(m)
-        '''
 
         if viewset_pref.get('base', None):
             classes = [
@@ -131,8 +105,6 @@ class ViewsetGenFactory(type):
         new_cls = type(name, tuple(classes), {})
 
         for class_prop in list(params.keys()):
-            if class_prop == 'schema' and REST_FRAMEWORK_HAS_DEFAULT_SCHEMA_CLASS and not has_schema:
-                continue
             if getattr(new_cls, class_prop, None):
                 del params[class_prop]
 

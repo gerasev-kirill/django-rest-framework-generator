@@ -1,4 +1,5 @@
 import os, sys, warnings
+from django.utils.translation import ugettext_lazy
 
 from ... import helpers
 
@@ -116,4 +117,15 @@ class BaseModelGenerator(object):
         fields['Meta'] = MetaNoAbstract
         model_cls = type(self.model_name, tuple(classes), fields)
         setattr(model_cls, 'DRFS_MODEL_DEFINITION', self.model_definition)
+
+        has_verbose_name = False
+        for cl in classes:
+            if hasattr(cl, 'Meta') and getattr(cl.Meta, 'verbose_name', None):
+                has_verbose_name = True
+        if not has_verbose_name and self.model_definition.get('representation', {}).get('name', None):
+            model_cls._meta.verbose_name = ugettext_lazy(self.model_definition['representation']['name'])
+            model_cls._meta.verbose_name_plural = ugettext_lazy(
+                self.model_definition['representation'].get('namePlural', None) or \
+                self.model_definition['representation']['name'] + 's'
+            )
         return model_cls

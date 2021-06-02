@@ -70,6 +70,16 @@ def drf_ignore_filter_backend(model_name=None):
     return wrapper
 
 
+def drf_api_doc(request_serializer=None, response_serializer=None, ignore_filter_backend=False):
+    def wrapper(func):
+        func.schema_api_doc = {
+            'request_serializer': request_serializer,
+            'response_serializer': response_serializer,
+            'ignore_filter_backend': ignore_filter_backend
+        }
+        return func
+    return wrapper
+
 
 def drf_action_decorator(func, model_acl):
 

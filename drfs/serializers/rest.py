@@ -158,6 +158,13 @@ class UserRegisterUsernameAndEmailUniqueSerializer(UserRegisterSerializer):
 
 
 
+class UserLoggedInfoSerializer(serializers.Serializer):
+    token = serializers.CharField(label=_("Auth token"))
+    userId = serializers.IntegerField(label=_("User id"))
+    user = serializers.JSONField(label=_("User data"))
+
+
+
 class BaseModelSerializer(LoopbackJsSerializerMixin):
     def __init__(self, *args, **kwargs):
         super(BaseModelSerializer, self).__init__(*args, **kwargs)

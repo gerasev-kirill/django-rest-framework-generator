@@ -1,19 +1,46 @@
 from rest_framework.response import Response
 from rest_framework.authentication import TokenAuthentication
 from rest_framework import exceptions
+from rest_framework.settings import api_settings as drf_api_settings
 
-from drfs.decorators import action
+from drfs.decorators import action, drf_ignore_filter_backend, drf_api_doc
 
-from ..serializers import rest as serializers_rest
+from ..serializers import rest as rest_serializers
+from ..serializers import schema as schema_serializers
 
 
+if not getattr(drf_api_settings, 'DEFAULT_SCHEMA_CLASS', None):
+    # old drf
+    try:
+        from rest_framework.schemas.coreapi import AutoSchema as BaseAutoSchema
+    except ImportError:
+        BaseAutoSchema = object
+else:
+    BaseAutoSchema = drf_api_settings.DEFAULT_SCHEMA_CLASS
+
+
+class UserSchema(BaseAutoSchema):
+    def get_request_serializer(self, path, method):
+        action = getattr(self.view, 'action', None)
+        if action == 'login':
+            return self.view.get_user_login_serializer_class()()
+        if action == 'register':
+            return self.view.get_user_register_serializer_class()()
+        return super(UserSchema, self).get_request_serializer(path, method)
+
+    def get_response_serializer(self, path, method):
+        action = getattr(self.view, 'action', None)
+        if action == 'login':
+            return rest_serializers.UserLoggedInfoSerializer()
+        return super(UserSchema, self).get_response_serializer(path, method)
 
 
 
 class UserRegisterLoginLogoutMixin(object):
     user_serializer_class = None
-    user_register_serializer_class = serializers_rest.UserRegisterSerializer
-    user_login_serializer_class = serializers_rest.UserLoginUsernameSerializer
+    user_register_serializer_class = rest_serializers.UserRegisterSerializer
+    user_login_serializer_class = rest_serializers.UserLoginUsernameSerializer
+    schema = UserSchema()
 
     def get_user_serializer_class(self):
         assert self.user_serializer_class is not None, (
@@ -85,6 +112,7 @@ class UserRegisterLoginLogoutMixin(object):
     def perform_register(self, serializer):
         serializer.save()
 
+    @drf_ignore_filter_backend()
     @action(methods=['post'], detail=False)
     def register(self, request, *args, **kwargs):
         serializer = self.get_user_register_serializer(data=request.data)
@@ -101,30 +129,11 @@ class UserRegisterLoginLogoutMixin(object):
     def perform_login(self, serializer):
         pass
 
+    @drf_ignore_filter_backend()
     @action(methods=['post'], detail=False)
     def login(self, request, *args, **kwargs):
         """
         Login a user with username/email and password(depend on serializer)
-        ---
-        omit_serializer: true
-        type:
-            token:
-              required: true
-              type: string
-            userId:
-              required: true
-              type: number
-            user:
-              type: object
-        parameters:
-            - name: username
-              required: true
-              type: string
-              paramType: form
-            - name: password
-              required: true
-              type: string
-              paramType: form
         """
         serializer = self.get_user_login_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -139,15 +148,12 @@ class UserRegisterLoginLogoutMixin(object):
     def perform_logout(self, user, token):
         token.delete()
 
+    @drf_ignore_filter_backend()
+    @drf_api_doc(response_serializer=schema_serializers.EmptyJsonSerializer)
     @action(methods=['delete'], detail=False)
     def logout(self, request, *args, **kwargs):
         """
         Logout a user with access token
-        ---
-        omit_serializer: true
-        responseMessages:
-            - code: 204
-              message: Request was successful
         """
         result = TokenAuthentication().authenticate(request)
         if not result or len(result) != 2:
@@ -161,6 +167,8 @@ class UserRegisterLoginLogoutMixin(object):
     def perform_reset_password(self, user, token):
         pass
 
+    @drf_ignore_filter_backend()
+    @drf_api_doc(response_serializer=schema_serializers.EmptyJsonSerializer)
     @action(methods=['post'], detail=False)
     def reset(self, request, *args, **kwargs):
         email = request.data.get('email', None)
@@ -181,6 +189,8 @@ class UserRegisterLoginLogoutMixin(object):
         user.set_password(new_password)
         user.save()
 
+    @drf_ignore_filter_backend()
+    @drf_api_doc(response_serializer=schema_serializers.EmptyJsonSerializer)
     @action(methods=['post'], detail=False)
     def set_password(self, request, *args, **kwargs):
         password = request.data.get('password', None)

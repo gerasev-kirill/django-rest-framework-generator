@@ -4,6 +4,7 @@ from rest_framework.permissions import AllowAny
 from django.contrib.auth.models import User as UserModel
 
 from . import models
+from drfs.permissions.drf import Everyone
 
 
 class Viewset(TestCase):
