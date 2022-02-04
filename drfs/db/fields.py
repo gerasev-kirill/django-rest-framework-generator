@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import django, json, copy
 from django.conf import settings
+from django.db import models
 from rest_framework.serializers import CharField
 from .validators import EmbeddedValidator
 
@@ -69,18 +70,26 @@ if django.VERSION >= (3,1,0) and getattr(settings, 'DRF_GENERATOR_USE_NATIVE_JSO
 else:
     try:
         from jsonfield.fields import JSONFieldBase
-        from django.db import models
 
         class JSONField(JSONFieldBase, models.TextField):
             def __init__(self, *args, encoder=None, decoder=None, **kwargs):
                 super(JSONField, self).__init__(*args, **kwargs)
 
     except ImportError:
-        from jsonfield.fields import JSONField as JSONFieldBase
+        from jsonfield.fields import JSONFieldMixin as JSONFieldBase
+        from .forms import JSONFormField
 
-        class JSONField(JSONFieldBase):
+        class JSONField(JSONFieldBase, models.TextField):
             def __init__(self, *args, encoder=None, decoder=None, **kwargs):
                 super(JSONField, self).__init__(*args, **kwargs)
+
+
+            def formfield(self, **kwargs):
+                kwargs['form_class'] = JSONFormField
+                if hasattr(self, 'embedded_validator'):
+                    kwargs['embedded_model_data'] = self.embedded_validator.model_data
+                return super().formfield(**kwargs)
+
 
     class BaseEmbedded(JSONField):
         embedded_validator = None

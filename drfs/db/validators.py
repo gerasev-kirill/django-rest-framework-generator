@@ -71,6 +71,7 @@ class EmbeddedValidator:
         for name, data in (self.model_data.get('relations', None) or {}).items():
             if data.get('deleteKeyIfValueIn', None):
                 self.options['deleteKeyIfValueIn'][name] = data['deleteKeyIfValueIn']
+            self.model_data['relations'][name]['model_data'] = load_embedded_model(data['model'])
             name, validators = self.build_schema(name, data)
             self.schema[name] = validators
 
@@ -108,7 +109,11 @@ class EmbeddedValidator:
                 def validate(value):
                     if not is_required and value == None:
                         return True
-                    return value >= params[validationType]
+                    if validationType == 'min':
+                        return value >= params[validationType]
+                    if validationType == 'max':
+                        return value <= params[validationType]
+                    return True
                 validate.__name__ = 'validate_by_size_' + validationType
                 return validate
             if 'min' in params:
