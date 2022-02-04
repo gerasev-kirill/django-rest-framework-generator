@@ -59,8 +59,9 @@ class DjangoOrmModelGenerator(BaseModelGenerator):
         'belongsTo': django_models.ForeignKey,
         'hasOne': django_models.OneToOneField,
         'hasMany': django_models.ManyToManyField,
+        'embedsOne': drfs_fields.EmbeddedOneModel,
         'embedsMany': drfs_fields.EmbeddedManyModel,
-        'embedsOne': drfs_fields.EmbeddedOneModel
+        'embedsManyAsObject': drfs_fields.EmbeddedManyAsObjectModel,
     }
 
     def get_model_class(self, model_path):
@@ -192,6 +193,16 @@ class DjangoOrmModelGenerator(BaseModelGenerator):
         field_kwargs['embedded_model_name'] = params['model']
         if 'default' not in field_kwargs:
             field_kwargs['default'] = []
+        return field_class, field_args, field_kwargs
+
+
+    def build_field__embedsManyAsObject(self, name, params):
+        field_class, field_args, field_kwargs = self.build_field(name, params)
+        field_kwargs['embedded_model_name'] = params['model']
+        if 'default' not in field_kwargs:
+            field_kwargs['default'] = []
+        if params.get('keys', None) and params['keys'].get('autoclean', False):
+            field_kwargs['keys'] = params['keys']
         return field_class, field_args, field_kwargs
 
 

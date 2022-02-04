@@ -200,3 +200,28 @@ class EmbeddedManyModel(ListField):
             return True
 
         self.validators.append(validator)
+
+
+class EmbeddedManyAsObjectModel(JSONField):
+    embedded_validator = None
+
+    def __init__(self, *args, **kwargs):
+        from drfs.db.validators import EmbeddedValidator
+        if 'embedded_model_name' in kwargs:
+            self.embedded_validator = EmbeddedValidator(
+                kwargs['embedded_model_name'],
+                params=kwargs.get('embedded_params', None)
+            )
+            del kwargs['embedded_model_name']
+            del kwargs['embedded_params']
+
+        super(EmbeddedManyAsObjectModel, self).__init__(*args, **kwargs)
+
+        def validator(data):
+            if not self.embedded_validator or not data:
+                return True
+            for key in data:
+                data[key] = self.embedded_validator.validate_data(data[key])
+            return True
+
+        self.validators.append(validator)

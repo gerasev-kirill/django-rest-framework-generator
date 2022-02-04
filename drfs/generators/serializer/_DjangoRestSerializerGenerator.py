@@ -39,7 +39,7 @@ class DjangoRestSerializerGenerator(BaseSerializerGenerator):
     if TimeZoneField:
         serializer_field_mapping[TimeZoneField] = drfs_fields.TimeZoneSerializer
     default_serializer_class = rest_serializers.ModelSerializer
-    model_relation_types = ['belongsTo', 'hasOne', 'hasMany', 'embedsOne', 'embedsMany']
+    model_relation_types = ['belongsTo', 'hasOne', 'hasMany', 'embedsOne', 'embedsMany', 'embedsManyAsObject']
 
 
     def get_model_class(self, model_path):
@@ -60,6 +60,20 @@ class DjangoRestSerializerGenerator(BaseSerializerGenerator):
             serializer_kwargs['required'] = False
             serializer_kwargs['allow_null'] = True
         return drfs_field_serializers.EmbeddedManyModel, [], serializer_kwargs
+
+
+    def build_relational_serializer__embedsManyAsObject(self, django_field, params):
+        serializer_kwargs = {
+            'help_text': getattr(django_field, 'help_text', ''),
+            'embedded_model_name': params['model'],
+            'embedded_params': params
+        }
+        if 'default' in params:
+            serializer_kwargs['default'] = params['default']
+        if not params.get('required', True):
+            serializer_kwargs['required'] = False
+            serializer_kwargs['allow_null'] = True
+        return drfs_field_serializers.EmbeddedManyAsObjectModel, [], serializer_kwargs
 
 
     def build_relational_serializer__embedsOne(self, django_field, params):

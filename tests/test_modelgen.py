@@ -3,6 +3,7 @@ from django.contrib.auth.models import User as UserModel
 from django.db.models.fields.related import ForeignKey, OneToOneField
 import drfs, json
 from drfs.generators.model import DjangoOrmModelGenerator
+from django.core.exceptions import ValidationError
 
 FIELD_MAP = DjangoOrmModelGenerator.model_fields_mapping
 
@@ -146,3 +147,123 @@ class Model2(TestCase):
         modelClass = drfs.generate_model('ModelWithRefToTestModel.json')
         opts = modelClass._meta
         has_one_field = opts.get_field('has_one_field')
+
+    def test_relations_embedsManyAsObject(self):
+        from drfs.db.fields import EmbeddedManyAsObjectModel
+        modelClass = drfs.generate_model('TestModelWithEmbeddedManyAsObject.json')
+
+        field = modelClass._meta.get_field('many_embedded_as_object')
+        self.assertTrue(isinstance(field, EmbeddedManyAsObjectModel))
+
+        instance = modelClass.objects.create(many_embedded_as_object={
+            '1': {
+                'estring': 'test'
+            }
+        })
+        self.assertEqual(
+            instance.many_embedded_as_object['1']['estring'],
+            'test'
+        )
+        # autoset
+        self.assertEqual(
+            instance.many_embedded_as_object['1']['eint'],
+            90
+        )
+
+        # nested embedded
+        instance = modelClass.objects.create(nested_many_embedded_as_object={
+            '1': {
+                'estring': 'test',
+                'one_embedded2': {
+                    "eint2": 100
+                }
+            }
+        })
+        self.assertDictEqual(
+            instance.nested_many_embedded_as_object,
+            {'1': {'estring': 'test', 'one_embedded2': {'eint2': 100}, 'eint': 90}}
+        )
+
+        # autoclean for model keys
+        instance = modelClass.objects.create(many_embedded_as_object_with_model_key={
+            '1': {
+                'estring': 'test',
+                'one_embedded2': {
+                    "eint2": 100
+                }
+            },
+            '2': {
+                'estring': 'test',
+                'one_embedded2': {
+                    "eint2": 100
+                }
+            }
+        })
+        # none will be saved
+        self.assertDictEqual(instance.many_embedded_as_object_with_model_key, {})
+
+        # create object with id == 2
+        TestModel = drfs.generate_model('TestModel.json')
+        TestModel.objects.create(id=2)
+
+        instance = modelClass.objects.create(many_embedded_as_object_with_model_key={
+            '1': {
+                'estring': 'test',
+                'one_embedded2': {
+                    "eint2": 100
+                }
+            },
+            '2': {
+                'estring': 'test',
+                'one_embedded2': {
+                    "eint2": 100
+                }
+            }
+        })
+        self.assertDictEqual(
+            instance.many_embedded_as_object_with_model_key,
+            {
+                '2': {
+                    'estring': 'test',
+                    'eint': 90,
+                    'one_embedded2': {
+                        "eint2": 100
+                    }
+                }
+            }
+        )
+
+        # errors
+        self.assertRaisesMessage(
+            ValidationError,
+            "Wrong keys 'notExists' in {'estring': 'test', 'notExists': 'invalid'}",
+            modelClass.objects.create,
+            many_embedded_as_object={
+                '1': {
+                    'estring': 'test',
+                    'notExists': 'invalid'
+                }
+            }
+        )
+
+        self.assertRaisesMessage(
+            ValidationError,
+            "2 should be instance of 'dict'",
+            modelClass.objects.create,
+            many_embedded_as_object={},
+            nested_many_embedded_as_object={
+                '1': 2
+            }
+        )
+
+        self.assertRaisesMessage(
+            ValidationError,
+            "Wrong keys \'blabla\' in {\'blabla\': 100}",
+            modelClass.objects.create,
+            many_embedded_as_object={},
+            nested_many_embedded_as_object={
+                '1': {
+                    'blabla': 100
+                }
+            }
+        )

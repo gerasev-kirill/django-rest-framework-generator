@@ -20,3 +20,4 @@ TestModelForJsonData = drfs.generate_model('TestModelForJsonData.json')
 
 
 TestModelWithEmbeddedOne = drfs.generate_model('TestModelWithEmbeddedOne.json')
+TestModelWithEmbeddedManyAsObject = drfs.generate_model('TestModelWithEmbeddedManyAsObject.json')

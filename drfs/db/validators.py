@@ -212,6 +212,23 @@ class EmbeddedValidator:
 
             validators = [embeds_many_validate]
 
+        if params['type'] == 'embedsManyAsObject':
+            validator = EmbeddedValidator(params['model'], params=params)
+            def embeds_many_validate(value):
+                if not is_required and value == None:
+                    return None
+                if not isinstance(value, dict):
+                    return False
+                for key in value:
+                    try:
+                        validator.validate_data(value[key])
+                    except Exception as e:
+                        # print 'invalid', params['type'], field_name, params['model'], str(e)
+                        raise schema.SchemaError("Invalid property '%s' in embedsManyAsObject '%s': %s" % (key, field_name, str(e)))
+                return value
+
+            validators = [embeds_many_validate]
+
         return field, validators
 
 

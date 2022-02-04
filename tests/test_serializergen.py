@@ -302,6 +302,105 @@ class Relations(TestCase):
         )
 
 
+    def test_embedsManyAsObject(self):
+        modelClass = drfs.generate_model('TestModelWithEmbeddedManyAsObject.json')
+        TestModel = drfs.generate_model('TestModel.json')
+        serializerClass = drfs.generate_serializer(modelClass)
+
+        test_model_id = TestModel.objects.last().id
+        instance = modelClass.objects.create(
+            many_embedded_as_object={
+                '1': {
+                    'estring': 'test'
+                }
+            },
+            nested_many_embedded_as_object={
+                '1': {
+                    'estring': 'test2',
+                    'one_embedded2': {
+                        "eint2": 200
+                    }
+                }
+            },
+            many_embedded_as_object_with_model_key={
+                str(test_model_id): {
+                    'estring': 'test3',
+                    'one_embedded2': {
+                        "eint2": 100
+                    }
+                },
+                '500': {
+                    'estring': 'test4',
+                    'one_embedded2': {
+                        "eint2": 100
+                    }
+                }
+            }
+        )
+
+
+        ser = serializerClass(instance)
+        self.assertDictEqual(
+            ser.data['many_embedded_as_object'],
+            {
+                "1": {
+                    "estring": "test",
+                    "eint": 90
+                }
+            }
+        )
+        self.assertDictEqual(
+            ser.data['nested_many_embedded_as_object'],
+            {
+                "1": {
+                    "estring": "test2",
+                    "one_embedded2": {
+                        "eint2": 200
+                    },
+                    "eint": 90
+                }
+            }
+        )
+        self.assertDictEqual(
+            ser.data['many_embedded_as_object_with_model_key'],
+            {
+                str(test_model_id): {
+                    "estring": "test3",
+                    "one_embedded2": {
+                        "eint2": 100
+                    },
+                    "eint": 90
+                }
+            }
+        )
+
+        ##
+        #      update
+        ##
+        ser = serializerClass(data={
+            'many_embedded_as_object_with_model_key':{
+                str(test_model_id): {
+                    'eint': 5,
+                    'one_embedded2': {}
+                },
+                'nnnnooooonn': {
+                    'eint': 6,
+                }
+            }
+        })
+        ser.is_valid()
+        instance_updated = ser.update(instance, ser.validated_data)
+
+        self.assertDictEqual(
+            ser.validated_data['many_embedded_as_object_with_model_key'],
+            {str(test_model_id): {'eint': 5, 'one_embedded2': {'eint2': 90}}}
+        )
+        self.assertDictEqual(
+            instance_updated.many_embedded_as_object_with_model_key,
+            {str(test_model_id): {'eint': 5, 'one_embedded2': {'eint2': 90}}}
+        )
+
+
 
 class SerializerExpandable(TestCase):
     def setUp(self):
