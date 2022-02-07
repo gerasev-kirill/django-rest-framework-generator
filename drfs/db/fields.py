@@ -168,23 +168,13 @@ class EmbeddedManyAsObjectModel(BaseEmbedded):
         if not self.embedded_validator or not value:
             return value
 
-        if self.embedded_keys.get('autoclean', False) and self.embedded_keys.get('model', None) and self.embedded_keys.get('type', None) == 'model':
-            from drfs import get_model
-            modelClass = get_model(self.embedded_keys['model'])
-            ids = []
-            for key in value.keys():
-                try:
-                    ids.append(int(key))
-                except ValueError:
-                    pass
-            known_ids = [
-                str(id)
-                for id in modelClass.objects.filter(id__in=ids).values_list('id', flat=True)
-            ]
-            for key in list(value.keys()):
-                if key not in known_ids:
-                    del value[key]
-
         for key in value:
             value[key] = self.embedded_validator.validate_data(value[key])
+
+        if self.embedded_keys.get('autoclean', False) and self.embedded_keys.get('model', None) and self.embedded_keys.get('type', None) == 'model':
+            value = self.embedded_validator.clean_id_model_keys_in_data(
+                value,
+                model_name=self.embedded_keys['model']
+            )
+
         return value

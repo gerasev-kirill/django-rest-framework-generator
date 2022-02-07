@@ -61,16 +61,22 @@ class EmbeddedValidator:
 
         self.schema = {}
         self.options = {
-            'deleteKeyIfValueIn': {}
+            'deleteKeyIfValueIn': {},
+            'autocleanIdModelKeys': {}
         }
+
         for name, data in (self.model_data.get('properties', None) or {}).items():
             if data.get('deleteKeyIfValueIn', None):
                 self.options['deleteKeyIfValueIn'][name] = data['deleteKeyIfValueIn']
             name, validators = self.build_schema(name, data)
             self.schema[name] = schema.And(*validators)
+
         for name, data in (self.model_data.get('relations', None) or {}).items():
             if data.get('deleteKeyIfValueIn', None):
                 self.options['deleteKeyIfValueIn'][name] = data['deleteKeyIfValueIn']
+            if data.get('type', None) == 'embedsManyAsObject' and data.get('key', {}).get('autoclean', False) and data['key'].get('type', None) == 'model':
+                self.options['autocleanIdModelKeys'][name] = data['key'].get('model', None)
+
             self.model_data['relations'][name]['model_data'] = load_embedded_model(data['model'])
             name, validators = self.build_schema(name, data)
             self.schema[name] = validators
@@ -208,13 +214,13 @@ class EmbeddedValidator:
                     except Exception as e:
                         # print 'invalid', params['type'], field_name, params['model'], str(e)
                         raise schema.SchemaError("Invalid field '%s': %s" % (field_name, str(e)))
-                return value
-
-            validators = [embeds_many_validate]
+                return True
+            # не изменять нижнее поведение!
+            validators = [schema.And(embeds_many_validate)]
 
         if params['type'] == 'embedsManyAsObject':
             validator = EmbeddedValidator(params['model'], params=params)
-            def embeds_many_validate(value):
+            def embeds_many_as_object_validate(value):
                 if not is_required and value == None:
                     return None
                 if not isinstance(value, dict):
@@ -225,20 +231,47 @@ class EmbeddedValidator:
                     except Exception as e:
                         # print 'invalid', params['type'], field_name, params['model'], str(e)
                         raise schema.SchemaError("Invalid property '%s' in embedsManyAsObject '%s': %s" % (key, field_name, str(e)))
-                return value
-
-            validators = [embeds_many_validate]
+                return True
+            # не изменять нижнее поведение!
+            validators = schema.And(embeds_many_as_object_validate)
 
         return field, validators
 
 
     def clean_data(self, data):
-        if not data or not self.options['deleteKeyIfValueIn']:
+        if not data:
             return data
-        for k in list(data.keys()):
-            if data[k] in self.options['deleteKeyIfValueIn'].get(k, []):
-                del data[k]
+        if self.options['deleteKeyIfValueIn']:
+            for k in list(data.keys()):
+                if data[k] in self.options['deleteKeyIfValueIn'].get(k, []):
+                    del data[k]
+        for name in self.options['autocleanIdModelKeys']:
+            for k in data:
+                data[k] = self.clean_id_model_keys_in_data(data[k], model_name=self.options['autocleanIdModelKeys'][name])
         return data
+
+
+    def clean_id_model_keys_in_data(self, data, model_name=None):
+        if not model_name or not isinstance(data, dict):
+            return data
+        from drfs import get_model
+
+        modelClass = get_model(model_name)
+        ids = []
+        for key in data.keys():
+            try:
+                ids.append(int(key))
+            except ValueError:
+                pass
+        known_ids = [
+            str(id)
+            for id in modelClass.objects.filter(id__in=ids).values_list('id', flat=True)
+        ]
+        for key in list(data.keys()):
+            if key not in known_ids:
+                del data[key]
+        return data
+
 
     def validate_data(self, data):
         if data == None and not self.params.get('required', False):
