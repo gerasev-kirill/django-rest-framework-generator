@@ -77,7 +77,7 @@ else:
 
     except ImportError:
         from jsonfield.fields import JSONFieldMixin as JSONFieldBase
-        from .forms import JSONFormField
+        #from .forms import JSONFormField
 
         class JSONField(JSONFieldBase, models.TextField):
             def __init__(self, *args, encoder=None, decoder=None, **kwargs):
@@ -85,7 +85,7 @@ else:
 
 
             def formfield(self, **kwargs):
-                kwargs['form_class'] = JSONFormField
+                #kwargs['form_class'] = JSONFormField
                 if hasattr(self, 'embedded_validator'):
                     kwargs['embedded_model_data'] = self.embedded_validator.model_data
                 return super().formfield(**kwargs)
