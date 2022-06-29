@@ -1,9 +1,22 @@
 import json
+from collections.abc import Mapping
+from collections import OrderedDict
 from rest_framework import serializers
 from rest_framework.authtoken import serializers as authtoken_serializers
-from django.utils.translation import ugettext_lazy as _
-from django.contrib.auth import authenticate
 from rest_framework.exceptions import ValidationError
+from rest_framework.settings import api_settings as rest_api_settings
+from rest_framework.fields import get_error_detail, set_value
+from rest_framework.fields import SkipField
+
+
+from django.contrib.auth import authenticate
+from django.core.exceptions import ValidationError as DjangoValidationError
+try:
+    # DEPRECATED
+    from django.utils.translation import ugettext_lazy as _
+except ImportError:
+    # django >= 4.0.0
+    from django.utils.translation import gettext_lazy as _
 
 try:
     from drf_loopback_js_filters.serializers import LoopbackJsSerializerMixin
@@ -168,6 +181,48 @@ class UserLoggedInfoSerializer(serializers.Serializer):
 class BaseModelSerializer(LoopbackJsSerializerMixin):
     def __init__(self, *args, **kwargs):
         super(BaseModelSerializer, self).__init__(*args, **kwargs)
+
+    def to_internal_value(self, data):
+        """
+        копия https://github.com/encode/django-rest-framework/blob/master/rest_framework/serializers.py
+        нужна, чтоб игнорить загрузку строк как файлов
+        """
+        if not isinstance(data, Mapping):
+            message = self.error_messages['invalid'].format(
+                datatype=type(data).__name__
+            )
+            raise ValidationError({
+                rest_api_settings.NON_FIELD_ERRORS_KEY: [message]
+            }, code='invalid')
+
+        ret = OrderedDict()
+        errors = OrderedDict()
+        fields = self._writable_fields
+
+        for field in fields:
+            validate_method = getattr(self, 'validate_' + field.field_name, None)
+            primitive_value = field.get_value(data)
+            if isinstance(field, (serializers.FileField, serializers.ImageField)):
+                # поймали файловое поле
+                if isinstance(primitive_value, str) and primitive_value:
+                    continue
+            try:
+                validated_value = field.run_validation(primitive_value)
+                if validate_method is not None:
+                    validated_value = validate_method(validated_value)
+            except ValidationError as exc:
+                errors[field.field_name] = exc.detail
+            except DjangoValidationError as exc:
+                errors[field.field_name] = get_error_detail(exc)
+            except SkipField:
+                pass
+            else:
+                set_value(ret, field.source_attrs, validated_value)
+
+        if errors:
+            raise ValidationError(errors)
+
+        return ret
 
 
     def get_fields(self, *args, **kwargs):

@@ -1,5 +1,10 @@
 import os, sys, warnings
-from django.utils.translation import ugettext_lazy
+try:
+    # DEPRECATED
+    from django.utils.translation import ugettext_lazy as _
+except ImportError:
+    # django >= 4.0.0
+    from django.utils.translation import gettext_lazy as _
 
 from ... import helpers
 
@@ -123,8 +128,8 @@ class BaseModelGenerator(object):
             if hasattr(cl, 'Meta') and getattr(cl.Meta, 'verbose_name', None):
                 has_verbose_name = True
         if not has_verbose_name and self.model_definition.get('representation', {}).get('name', None):
-            model_cls._meta.verbose_name = ugettext_lazy(self.model_definition['representation']['name'])
-            model_cls._meta.verbose_name_plural = ugettext_lazy(
+            model_cls._meta.verbose_name = _(self.model_definition['representation']['name'])
+            model_cls._meta.verbose_name_plural = _(
                 self.model_definition['representation'].get('namePlural', None) or \
                 self.model_definition['representation']['name'] + 's'
             )

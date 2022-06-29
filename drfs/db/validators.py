@@ -14,7 +14,10 @@ def load_embedded_model(name):
         if not os.path.isfile(fpath):
             continue
         with open(fpath) as f:
-            model_schema = json.load(f)
+            try:
+                model_schema = json.load(f)
+            except Exception as e:
+                raise Exception("Unable to parse {file}. {error}".format(file=fpath, error=e))
         break
     return model_schema
 

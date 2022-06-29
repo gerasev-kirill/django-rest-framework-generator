@@ -1,6 +1,11 @@
 
 from rest_framework import serializers
-from django.utils.translation import ugettext_lazy as _
+try:
+    # DEPRECATED
+    from django.utils.translation import ugettext_lazy as _
+except ImportError:
+    # django >= 4.0.0
+    from django.utils.translation import gettext_lazy as _
 
 
 class EmptyJsonSerializer(serializers.Serializer):
