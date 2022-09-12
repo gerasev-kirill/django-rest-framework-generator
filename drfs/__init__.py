@@ -20,10 +20,14 @@ def find_model_definition(name, path=None):
 
     path = None
     module_name = None
-    for d in os.listdir(settings.BASE_DIR):
+    if isinstance(settings.BASE_DIR, str):
+        BASE_DIR = settings.BASE_DIR
+    else:
+        BASE_DIR = str(settings.BASE_DIR)
+    for d in os.listdir(BASE_DIR):
         if d[0] == '.':
             continue
-        p = os.path.join(settings.BASE_DIR, d, 'models.json')
+        p = os.path.join(BASE_DIR, d, 'models.json')
         if os.path.isdir(p):
             ld = os.listdir(p)
             if name in ld:
@@ -33,9 +37,9 @@ def find_model_definition(name, path=None):
         if path:
             break
     if not path and not module_name:
-        p = os.path.join(settings.BASE_DIR, 'models.json', name)
+        p = os.path.join(BASE_DIR, 'models.json', name)
         if os.path.exists(p) and os.path.isfile(p):
-            return (os.path.basename(settings.BASE_DIR), p)
+            return (os.path.basename(BASE_DIR), p)
     return (module_name, path)
 
 

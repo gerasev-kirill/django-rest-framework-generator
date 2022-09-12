@@ -86,8 +86,8 @@ else:
 
             def formfield(self, **kwargs):
                 #kwargs['form_class'] = JSONFormField
-                if hasattr(self, 'embedded_validator'):
-                    kwargs['embedded_model_data'] = self.embedded_validator.model_data
+                #if hasattr(self, 'embedded_validator'):
+                #    kwargs['embedded_model_data'] = self.embedded_validator.model_data
                 return super().formfield(**kwargs)
 
 

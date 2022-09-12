@@ -1,4 +1,5 @@
 import os, sys, warnings
+
 try:
     # DEPRECATED
     from django.utils.translation import ugettext_lazy as _
@@ -35,14 +36,19 @@ class BaseModelGenerator(object):
             return
         # DEPRECATED
         if model_path:
+            from django.conf import settings
             mixin_path = os.path.dirname(os.path.dirname(model_path))
+            if isinstance(settings.BASE_DIR, str):
+                BASE_DIR = settings.BASE_DIR
+            else:
+                BASE_DIR = str(settings.BASE_DIR)
             if os.path.isfile(os.path.join(mixin_path, 'model_mixins', self.model_name + '.py')):
                 warnings.warn("Do not use model mixins outside of base definition for model!", DeprecationWarning)
                 from django.conf import settings
-                mixin_path = mixin_path.replace(settings.BASE_DIR, '').split('dist-packages')[-1]
+                mixin_path = mixin_path.replace(BASE_DIR, '').split('dist-packages')[-1]
                 mixin_path = '.'.join(mixin_path.split('/'))
                 if not mixin_path:
-                    mixin_path = os.path.basename(settings.BASE_DIR)
+                    mixin_path = os.path.basename(BASE_DIR)
                 if mixin_path[0] == '.':
                     mixin_path = mixin_path[1:]
                 self.mixin_path = "{mixin_path}.model_mixins.{model_name}.ModelMixin".format(
