@@ -8,9 +8,11 @@ FLOAT_TYPES = tuple([float] + list(six.integer_types))
 def load_embedded_model(name):
     from django.apps import apps
     model_schema = None
+    if os.path.splitext(name)[-1] != '.json':
+        name = name + '.json'
 
     for app in apps.get_app_configs():
-        fpath = os.path.join(app.path, 'embedded_models.json', name+'.json')
+        fpath = os.path.join(app.path, 'embedded_models.json', name)
         if not os.path.isfile(fpath):
             continue
         with open(fpath) as f:
