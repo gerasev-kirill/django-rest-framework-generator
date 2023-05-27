@@ -162,6 +162,8 @@ class DjangoRestSerializerGenerator(BaseSerializerGenerator):
                 field_name,
                 relation_info
             )
+            if relation_info.reverse:
+                field_kwargs['required'] = field_kwargs.get('required', False)
             if field_params.get('serializer', {}).get('ignore_object_doesnt_exist', False) and \
                 field_class == rest_relations.PrimaryKeyRelatedField:
                 return SoftPrimaryKeyRelatedField, field_kwargs
