@@ -8,7 +8,7 @@ os.chdir(os.path.normpath(os.path.join(os.path.abspath(__file__), os.pardir)))
 
 requirements = [
     'Django>=1.11',
-    'djangorestframework',
+    'djangorestframework>=3.14.0',
     'Pillow>=4.2.1',
     'schema>=0.6.7',
     'jsonfield>=3.1.0'
