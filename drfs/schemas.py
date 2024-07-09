@@ -1,7 +1,14 @@
+from collections import OrderedDict
+from decimal import Decimal
+from django.db import models
+
 from rest_framework import serializers
 from rest_framework.schemas.utils import is_list_view
 from rest_framework.schemas.openapi import AutoSchema as BaseAutoSchema
-import six
+
+
+from .helpers import fix_field_choices, field_choice_description_to_varname
+
 
 
 def get_or_create_serializer_instance(instance_or_class):
@@ -132,3 +139,83 @@ class AutoSchema(BaseAutoSchema):
                 'description': ""
             }
         }
+
+
+    def map_field(self, field):
+        if hasattr(field, 'to_openapi_schema'):
+            return field.to_openapi_schema()
+        
+        # Related fields.
+        if isinstance(field, serializers.ManyRelatedField):
+            child = field.child_relation
+            # хак для сериализаторов, у которых не указан queryset
+            if not child.queryset and hasattr(field.parent, 'Meta') and hasattr(field.parent.Meta, 'model'):
+                model = field.parent.Meta.model
+                model_field = model._meta.get_field(field.field_name)
+                if model_field and hasattr(model_field, 'related_model'):
+                    child._hack_for_schemas = model_field.related_model
+            return {
+                'type': 'array',
+                'items': self.map_field(child)
+            }
+
+        if isinstance(field, serializers.PrimaryKeyRelatedField):
+            model = getattr(field.queryset, 'model', None) or getattr(field, '_hack_for_schemas', None)
+            if model is not None:
+                model_field = model._meta.pk
+                if isinstance(model_field, (models.AutoField, models.BigAutoField)):
+                    return {'type': 'integer'}
+
+        result = super().map_field(field)
+        return result
+
+
+
+    def map_choicefield(self, field):
+        # preserve order and remove duplicates
+        choices = [
+            [k,v]
+            for k,v in field.choices.items()
+        ]
+        if all(isinstance(choice[0], bool) for choice in choices):
+            type = 'boolean'
+        elif all(isinstance(choice[0], int) for choice in choices):
+            type = 'integer'
+        elif all(isinstance(choice[0], (int, float, Decimal)) for choice in choices):  # `number` includes `integer`
+            # Ref: https://tools.ietf.org/html/draft-wright-json-schema-validation-00#section-5.21
+            type = 'number'
+        elif all(isinstance(choice, str) for choice in choices):
+            type = 'string'
+        else:
+            type = None
+
+        mapping = {
+            # The value of `enum` keyword MUST be an array and SHOULD be unique.
+            # Ref: https://tools.ietf.org/html/draft-wright-json-schema-validation-00#section-5.20
+            'enum': [
+                c[0]
+                for c in choices
+            ],
+            # openapi <= 3.1
+            'x-enum-varnames': [
+                field_choice_description_to_varname(c[1])
+                for c in choices
+            ]
+        }
+        # openapi > 3.1
+        mapping['oneOf'] = [
+            {
+                'title': choices[i][1], 
+                'const': mapping['x-enum-varnames'][i], 
+                'description': choices[i][1]
+            }
+            for i in range(len(choices))
+        ]
+
+        # If We figured out `type` then and only then we should set it. It must be a string.
+        # Ref: https://swagger.io/docs/specification/data-models/data-types/#mixed-type
+        # It is optional but it can not be null.
+        # Ref: https://tools.ietf.org/html/draft-wright-json-schema-validation-00#section-5.21
+        if type:
+            mapping['type'] = type
+        return mapping

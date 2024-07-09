@@ -1,41 +1,10 @@
 import schema, os, json, six
 from django.core.exceptions import ValidationError
 
+from ..helpers import fix_field_choices, load_embedded_model
+
+
 FLOAT_TYPES = tuple([float] + list(six.integer_types))
-
-
-
-def load_embedded_model(name):
-    from django.apps import apps
-    model_schema = None
-    if os.path.splitext(name)[-1] != '.json':
-        name = name + '.json'
-
-    for app in apps.get_app_configs():
-        fpath = os.path.join(app.path, 'embedded_models.json', name)
-        if not os.path.isfile(fpath):
-            continue
-        with open(fpath) as f:
-            try:
-                model_schema = json.load(f)
-            except Exception as e:
-                raise Exception("Unable to parse {file}. {error}".format(file=fpath, error=e))
-        break
-    return model_schema
-
-
-def fix_choices(choices):
-    if not isinstance(choices[0], tuple) and not isinstance(choices[0], list):
-        if isinstance(choices[0], tuple) or isinstance(choices[0], list):
-            return tuple([
-                tuple(c)
-                for c in choices
-            ])
-        return tuple([
-            (c, c)
-            for c in choices
-        ])
-    return tuple(choices)
 
 
 
@@ -164,7 +133,7 @@ class EmbeddedValidator:
         if 'choices' in params:
             choices = [
                 c[0]
-                for c in fix_choices(params['choices'])
+                for c in fix_field_choices(params['choices'])
             ]
             def validate_choices_for_array(value):
                 value = value or []

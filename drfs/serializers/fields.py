@@ -1,6 +1,9 @@
 from rest_framework import serializers, fields
 import json, six
 
+from .openapi import EmbeddedOpenapiSchemaGenerator
+
+
 FLOAT_TYPES = tuple([float] + list(six.integer_types))
 
 
@@ -51,6 +54,12 @@ class JSONField(fields.JSONField):
         return value
 
 
+    def to_openapi_schema(self):
+        return {
+            "type": "object"
+        }
+
+
 
 
 class ListField(fields.JSONField):
@@ -98,6 +107,13 @@ class ListField(fields.JSONField):
         return value
 
 
+    def to_openapi_schema(self):
+        return {
+            "type": "array",
+            "items": {
+                "type": "object"
+            }
+        }
 
 
 
@@ -144,6 +160,16 @@ class GeoPoint(JSONField):
         self.validators.append(geo_point_validator)
 
 
+    def to_openapi_schema(self):
+        gen = EmbeddedOpenapiSchemaGenerator('', {})
+        return gen.build_schema('', {
+            'type': 'GeoPoint',
+            'required': self.required
+        })
+
+
+
+
 
 class EmbeddedOneModel(JSONField):
     embedded_validator = None
@@ -175,6 +201,16 @@ class EmbeddedOneModel(JSONField):
         self.validators.append(validator)
 
 
+    def to_openapi_schema(self):
+        gen = EmbeddedOpenapiSchemaGenerator('', {})
+        return gen.build_schema('', {
+            'type': 'embedsOne',
+            'model': self.embedded_validator.model_name,
+            'required': self.required
+        })
+
+
+
 class EmbeddedManyModel(ListField):
     embedded_validator = None
 
@@ -202,6 +238,16 @@ class EmbeddedManyModel(ListField):
         self.validators.append(validator)
 
 
+    def to_openapi_schema(self):
+        gen = EmbeddedOpenapiSchemaGenerator('', {})
+        return gen.build_schema('', {
+            'type': 'embedsMany',
+            'model': self.embedded_validator.model_name,
+            'required': self.required
+        })
+
+
+
 class EmbeddedManyAsObjectModel(JSONField):
     embedded_validator = None
 
@@ -225,3 +271,11 @@ class EmbeddedManyAsObjectModel(JSONField):
             return True
 
         self.validators.append(validator)
+
+    def to_openapi_schema(self):
+        gen = EmbeddedOpenapiSchemaGenerator('', {})
+        return gen.build_schema('', {
+            'type': 'embedsManyAsObject',
+            'model': self.embedded_validator.model_name,
+            'required': self.required
+        })
