@@ -15,7 +15,7 @@ class FindOneModelMixin(object):
         """
         queryset = self.filter_queryset(self.get_queryset())
         try:
-            serializer = self.get_serializer(queryset[0])
+            serializer = self.get_serializer(queryset.first())
             return Response(serializer.data)
         except IndexError:
             raise Http404()
