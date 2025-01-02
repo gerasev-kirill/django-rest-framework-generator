@@ -14,8 +14,9 @@ class FindOneModelMixin(object):
         Returns first instance of the model matched by filter.where from the data source
         """
         queryset = self.filter_queryset(self.get_queryset())
-        try:
-            serializer = self.get_serializer(queryset.first())
-            return Response(serializer.data)
-        except IndexError:
+        item = queryset.first()
+        if not item:
             raise Http404()
+
+        serializer = self.get_serializer(item)
+        return Response(serializer.data)

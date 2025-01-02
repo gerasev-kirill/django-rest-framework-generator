@@ -89,7 +89,7 @@ def field_choice_description_to_varname(choice: str):
             .replace('/', ' ') \
             .replace('  ', ' ') \
             .replace('  ', ' ') 
-    choice = '_'.join(choice.split(' ')).upper()
+    choice = '_'.join(choice.split(' ')).upper() or 'EMPTY'
     if choice[0].isnumeric():
         choice = 'VAR_' + choice
     return unidecode(choice)
